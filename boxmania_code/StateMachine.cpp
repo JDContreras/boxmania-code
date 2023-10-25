@@ -3,13 +3,12 @@
 
 StateMachine::StateMachine() {
   currentState = States::DISABLE; // Initialize with DISABLE state
-  
 }
 
 void StateMachine::update() {
   switch (currentState) {
     case States::DISABLE:
-      handleInitializing();
+      handleDisable();
       break;
     case States::INITIALIZING:
       handleInitializing();
@@ -44,6 +43,8 @@ void StateMachine::update() {
 void StateMachine::setState(States newState) {
   currentState = newState;
 }
+
+
 
 // Implement the state-specific methods as needed
 void StateMachine::handleDisable() {

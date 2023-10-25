@@ -7,7 +7,7 @@ StepperMotor::StepperMotor(const StepperConfig& config)
   pinMode(config.stepPin, OUTPUT);
   pinMode(config.dirPin, OUTPUT);
   pinMode(config.stallPin, INPUT);
-  driver.setup(config.serialPort);
+  driver.setup(config.serialPort, 500000);
   driver.setRunCurrent(config.current);
   driver.setStallGuardThreshold(config.stallThreshold);
   driver.enableAutomaticCurrentScaling();
