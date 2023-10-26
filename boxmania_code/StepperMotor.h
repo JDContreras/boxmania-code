@@ -10,6 +10,12 @@ struct axisLimits {
   float minVelocity;
 };
 
+struct homingConfig { 
+  //since we are using stall detection for homing, home position must be iqual to maxPosition or minPosition
+  bool direction; //0- negative, 1 - positive
+  float velocity; 
+};
+
 struct StepperConfig {
   int stepPin;
   int dirPin;
@@ -18,6 +24,7 @@ struct StepperConfig {
   int current; //0-100%
   int stallThreshold; //0-200
   axisLimits limits;
+  homingConfig homing;
   HardwareSerial& serialPort; //use a diferent serial for each motor
 };
 
@@ -32,7 +39,8 @@ class StepperMotor {
 public:
   StepperMotor(const StepperConfig& config);
 
-  void move(float distance);
+  void moveRelative(float distance);
+  void moveAbs(float position);
   void enable();
   void home();
   void disable();
@@ -56,6 +64,10 @@ private:
   float acceleration;  // Constant acceleration (50 mm/s^2 in this case)
   int stepToDistanceFactor;
   uint32_t mmToPulses(float distance);
+  float currentPosition; // Current position of the axis
+  axisLimits limits;
+  bool homingDirection;
+  float homingVel;
 };
 
 #endif
