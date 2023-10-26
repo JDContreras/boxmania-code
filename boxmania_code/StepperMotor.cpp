@@ -1,23 +1,48 @@
 #include "StepperMotor.h"
 
 StepperMotor::StepperMotor(const StepperConfig& config)
-  : stepPin(config.stepPin), dirPin(config.dirPin), speed(40), stallPin(config.stallPin), stepToDistanceFactor(80), currentState(MotorState::DISABLE) {
-  // Constructor implementation
+  : stepPin(config.stepPin), 
+    dirPin(config.dirPin), 
+    speed(40),
+    initialSpeed(config.limits.minVelocity), 
+    stallPin(config.stallPin), 
+    stepToDistanceFactor(80), 
+    currentState(MotorState::DISABLE), 
+    limits(config.limits), 
+    homingDirection(config.homing.direction), 
+    homingVel(config.homing.velocity), 
+    lastStepTime(millis()),  // Initialize lastStepTime
+    acceleration(50.0)  // Default acceleration value
+  {
   // Initialize digital pins
   pinMode(config.stepPin, OUTPUT);
   pinMode(config.dirPin, OUTPUT);
   pinMode(config.stallPin, INPUT);
-  driver.setup(config.serialPort, 500000);
+
+  // Setup the TMC2209 driver
+  driver.setup(config.serialPort, 500000); //max baudrate
+
+  // Additional setup for the TMC2209 driver
   driver.setRunCurrent(config.current);
   driver.setStallGuardThreshold(config.stallThreshold);
   driver.enableAutomaticCurrentScaling();
-  lastStepTime = millis(); // Initialize lastStepTime
-  initialSpeed = 10.0;
-  acceleration = 50.0;
 }
 
-void StepperMotor::move(float distance) {
+void StepperMotor::moveRelative(float distance) {
   // move implementation
+
+  if (speed < initialSpeed) {
+    speed = initialSpeed;
+  }
+
+  // Calculate the maximum achievable speed based on acceleration and distance
+  float maxAchievableSpeed = sqrt(2 * acceleration * distance);
+
+  // Ensure that the requested speed is achievable
+  if (speed > maxAchievableSpeed) {
+    speed = maxAchievableSpeed;
+  }
+
   float currentSpeed = initialSpeed; // Start at the initial speed
   float currentDistance = 0; // Initialize the distance traveled
 
@@ -72,6 +97,18 @@ void StepperMotor::move(float distance) {
   }  
 }
 
+void StepperMotor::moveAbs(float targetPosition) {
+  // Calculate the relative distance to move from the current position to the target position
+  targetPosition = constrain(targetPosition, config.limits.minPosition, config.limits.maxPosition);
+
+  float relativeDistance = targetPosition - currentPosition;
+  // Call moveRelative to execute the motion
+  moveRelative(relativeDistance);
+
+  // Update the current position if the motion is successful
+  currentPosition = targetPosition;
+}
+
 uint32_t StepperMotor::mmToPulses(float distance) {
   return (uint32_t)(distance * stepToDistanceFactor);
 }
@@ -109,8 +146,15 @@ void StepperMotor::disable() {
 }
 
 void StepperMotor::setSpeed(int newSpeed) {
-  // setSpeed implementation
-  speed = newSpeed;
+  // Check if the new speed exceeds the maximum velocity limit
+  if (newSpeed > limits.maxVelocity) {
+    speed = limits.maxVelocity;
+  } else if (newSpeed < limits.minVelocity) { // Check if the new speed is below the minimum velocity limit
+    speed = limits.minVelocity;
+  } else {
+    // The new speed is within the allowed limits
+    speed = newSpeed;
+  }
 }
 
 void StepperMotor::setCurrent(int current) {
