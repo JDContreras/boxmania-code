@@ -20,12 +20,17 @@ struct StepperConfig {
   int stepPin;
   int dirPin;
   int stallPin;
-  int maxSpeed; //mm/s
   int current; //0-100%
   int stallThreshold; //0-200
+  int stepPerMilimeter; //steps per mm, depent of the pulley or gearbox
   axisLimits limits;
   homingConfig homing;
   HardwareSerial& serialPort; //use a diferent serial for each motor
+};
+
+struct moveResult {
+  float distance;
+  bool complete;
 };
 
 enum class MotorState {
@@ -38,8 +43,7 @@ enum class MotorState {
 class StepperMotor {
 public:
   StepperMotor(const StepperConfig& config);
-
-  void moveRelative(float distance);
+  moveResult moveRelative(float distance);
   void moveAbs(float position);
   void enable();
   void home();
@@ -47,13 +51,12 @@ public:
   void setSpeed(int speed);
   void setCurrent(int current);
   void setStallThreshold(int threshold);
-
+  bool stallStatus(); //read stallPin to check if the stall is detected. 
   MotorState getState();
 
 private:
-  void pulse();
+  void pulse(int stepInterval);
   TMC2209 driver;
-  int stallPin;
   int stepPin;
   int dirPin;
   int maxSpeed; //max linear speed in mm/s
@@ -68,6 +71,11 @@ private:
   axisLimits limits;
   bool homingDirection;
   float homingVel;
+  int stepPerMilimeter;
+  // Define the port and bit number of the stallPin
+  volatile uint32_t* stallPort;
+  uint32_t stallBit;
+  bool axishomed; //flag indicating axis has been homed
 };
 
 #endif
