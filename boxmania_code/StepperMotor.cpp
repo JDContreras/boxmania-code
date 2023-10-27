@@ -159,26 +159,41 @@ void StepperMotor::pulse(int stepInterval) {
 void StepperMotor::home() {
   // home implementation
   int stepInterval = int(1000000.0 / homingVel * stepPerMilimeter);
+  int maxPulseCount = (limits.maxPosition-limits.minPosition)*stepPerMilimeter;
   if (currentState == MotorState::STANDSTILL){
     currentState = MotorState::HOMING;
-    if (homingDirection){
-      digitalWrite(dirPin,HIGH);
-      while (!stallStatus()) { //TODO: this is locking, do validation
-        pulse(stepInterval);
-
+    int pulseCount = 0; // Initialize the pulse count
+    int totalPulseCount = 0; // Initialize the pulse count
+    // Determine the direction based on homingDirection
+    bool direction = homingDirection ? HIGH : LOW;
+    digitalWrite(dirPin, direction);
+    axishomed = true;
+    while (!stallStatus()) { //TODO: this is locking, do validation
+      pulse(stepInterval);
+      pulseCount++;
+      totalPulseCount++;
+      if (pulseCount >= stepPerMilimeter) {
+        // Check if the upper limit has been reached
+        if (totalPulseCount >= maxPulseCount) {
+          axishomed = false;
+          break;
+        }
+        pulseCount = 0; // Reset the pulse count
       }
+
+    }
+    if (axishomed && homingDirection){
       currentPosition = limits.maxPosition;
     }
-    else{
-      digitalWrite(dirPin,HIGH);
-      while (!stallStatus()) { //TODO: this is locking, do validation
-        pulse(stepInterval);
-
-      }
+    else if (axishomed && !homingDirection){
       currentPosition = limits.minPosition;
     }
+    else{
+      currentPosition = -1;
+    }
+    
   }
-  axishomed = true;
+  
 }
 
 void StepperMotor::disable() {
