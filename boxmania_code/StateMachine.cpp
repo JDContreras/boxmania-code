@@ -49,7 +49,8 @@ void StateMachine::setState(States newState) {
 // Implement the state-specific methods as needed
 void StateMachine::handleDisable() {
   // Handle the DISABLE state
-  // ...
+  // ... 
+  delay(10);
 }
 void StateMachine::handleInitializing() {
   // Handle the INITIALIZING state

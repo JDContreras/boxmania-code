@@ -1,6 +1,7 @@
 // StateMachine.h
 #ifndef STATEMACHINE_H
 #define STATEMACHINE_H
+#include <Arduino.h>
 
 enum class States {
   DISABLE,
@@ -10,7 +11,7 @@ enum class States {
   POSITIONING_Y,
   HOLDING,
   CUTTING,
-  RELEASING,
+  RELEASING, // rekeasing state
   OPENING_FLAPS,
   FLATTENING,
   ERROR
