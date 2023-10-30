@@ -8,13 +8,17 @@ StepperMotor::StepperMotor(const StepperConfig& config)
     currentState(MotorState::DISABLE), 
     limits(config.limits), 
     homingDirection(config.homing.direction), 
-    homingVel(config.homing.velocity), 
+    homingStepInterval(int(1000000.0 / config.homing.velocity * config.stepPerMilimeter)), 
     lastStepTime(millis()),  // Initialize lastStepTime
     acceleration(50.0),  // Default acceleration value
     stepPerMilimeter(config.stepPerMilimeter),
     stallPort(portInputRegister(digitalPinToPort(config.stallPin))),
     stallBit(digitalPinToBitMask(config.stallPin)),
-    axishomed(false)
+    axishomed(false),
+    homingState(0),
+    lastMillis(0),
+    maxPulseCount((limits.maxPosition-limits.minPosition)*config.stepPerMilimeter);
+    pulseCount(0);
   {
   // Initialize digital pins
   pinMode(config.stepPin, OUTPUT);
@@ -157,6 +161,38 @@ void StepperMotor::pulse(int stepInterval) {
 }
 
 void StepperMotor::home() {
+  switch (homingState) {
+    case 0: //idle
+      if (currentState == MotorState::STANDSTILL && !axishomed) {
+          digitalWrite(dirPin, direction);
+          axishomed = true;
+          state = HOMING;
+          homingState = 10;
+          lastMillis = millis();
+          pulseCount = 0;
+          totalPulseCount = 0;
+      }
+    case 10: //homing
+      unsigned long currentMillis = millis();
+      if (currentMillis - lastMillis >= homingStepInterval) {
+        lastMillis = currentMillis;
+        pulse(20);
+        pulseCount++;
+        totalPulseCount++;
+
+        if (pulseCount >= stepPerMilimeter) {
+          if (totalPulseCount >= maxPulseCount) {
+            axishomed = false;
+            state = FAIL;
+          }
+          pulseCount = 0;
+        }
+      }
+
+
+}
+
+void StepperMotor::home() {
   // home implementation
   int stepInterval = int(1000000.0 / homingVel * stepPerMilimeter);
   int maxPulseCount = (limits.maxPosition-limits.minPosition)*stepPerMilimeter;
@@ -168,33 +204,40 @@ void StepperMotor::home() {
     bool direction = homingDirection ? HIGH : LOW;
     digitalWrite(dirPin, direction);
     axishomed = true;
-    while (!stallStatus()) { //TODO: this is locking, do validation
-      pulse(stepInterval);
+    unsigned long lastMillis = millis();
+    while (!stallStatus()) {
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastMillis >= stepInterval) {
+      lastMillis = currentMillis;
+      pulse(11); //1 ms low time
       pulseCount++;
       totalPulseCount++;
+      //check limit each mm, redice overhead
       if (pulseCount >= stepPerMilimeter) {
-        // Check if the upper limit has been reached
         if (totalPulseCount >= maxPulseCount) {
           axishomed = false;
           break;
         }
-        pulseCount = 0; // Reset the pulse count
+        pulseCount = 0;
       }
-
     }
-    if (axishomed && homingDirection){
-      currentPosition = limits.maxPosition;
-    }
-    else if (axishomed && !homingDirection){
-      currentPosition = limits.minPosition;
     }
     else{
-      currentPosition = -1;
-    }
-    
+      if (axishomed && homingDirection){
+        currentPosition = limits.maxPosition;
+      }
+      else if (axishomed && !homingDirection){
+        currentPosition = limits.minPosition;
+      }
+      else{
+        currentPosition = -1;
+      }
+  }
   }
   
 }
+
+
 
 void StepperMotor::disable() {
   // disable implementation

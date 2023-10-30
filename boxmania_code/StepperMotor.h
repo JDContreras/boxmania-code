@@ -70,12 +70,16 @@ private:
   float currentPosition; // Current position of the axis
   axisLimits limits;
   bool homingDirection;
-  float homingVel;
+  int homingStepInterval;
   int stepPerMilimeter;
   // Define the port and bit number of the stallPin
   volatile uint32_t* stallPort;
   uint32_t stallBit;
   bool axishomed; //flag indicating axis has been homed
+  int homingState;
+  unsigned long lastMillis;
+  int maxPulseCount;
+  int pulseCount;
 };
 
 #endif

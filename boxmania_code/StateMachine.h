@@ -2,6 +2,8 @@
 #ifndef STATEMACHINE_H
 #define STATEMACHINE_H
 
+#include "StepperMotor.h"
+
 enum class States {
   DISABLE,
   INITIALIZING,
@@ -16,6 +18,11 @@ enum class States {
   ERROR
 };
 
+struct systemConfig { 
+  //since we are using stall detection for homing, home position must be iqual to maxPosition or minPosition
+  bool direction; //0- negative, 1 - positive
+  float velocity; 
+};
 
 class StateMachine {
 public:
