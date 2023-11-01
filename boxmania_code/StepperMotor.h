@@ -46,7 +46,8 @@ public:
   moveResult moveRelative(float distance);
   void moveAbs(float position);
   void enable();
-  void home();
+  void home(bool execute);
+  bool isHomed();
   void disable();
   void setSpeed(int speed);
   void setCurrent(int current);
@@ -77,9 +78,11 @@ private:
   uint32_t stallBit;
   bool axishomed; //flag indicating axis has been homed
   int homingState;
-  unsigned long lastMillis;
+  unsigned long lastMicros;
   int maxPulseCount;
   int pulseCount;
+  int totalPulseCount;
+  bool prevExecute ;
 };
 
 #endif
