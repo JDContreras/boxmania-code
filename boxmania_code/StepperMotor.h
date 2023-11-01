@@ -46,7 +46,8 @@ public:
   moveResult moveRelative(float distance);
   void moveAbs(float position);
   void enable();
-  void home();
+  void home(bool execute);
+  bool isHomed();
   void disable();
   void setSpeed(int speed);
   void setCurrent(int current);
@@ -70,12 +71,18 @@ private:
   float currentPosition; // Current position of the axis
   axisLimits limits;
   bool homingDirection;
-  float homingVel;
+  int homingStepInterval;
   int stepPerMilimeter;
   // Define the port and bit number of the stallPin
   volatile uint32_t* stallPort;
   uint32_t stallBit;
   bool axishomed; //flag indicating axis has been homed
+  int homingState;
+  unsigned long lastMicros;
+  int maxPulseCount;
+  int pulseCount;
+  int totalPulseCount;
+  bool prevExecute ;
 };
 
 #endif
