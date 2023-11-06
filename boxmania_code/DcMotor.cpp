@@ -1,8 +1,8 @@
 #include "DCMotor.h"
 #include <Arduino.h>
 
-DCMotor::DCMotor(int forwardPin, int reversePin)
-  : forwardPin(forwardPin), reversePin(reversePin) {
+DCMotor::DCMotor(DcMotorConfig& config)
+  : forwardPin(config.forwardPin), reversePin(config.reversePin), maxSpeed(config.maxSpeed) {
   pinMode(forwardPin, OUTPUT);
   pinMode(reversePin, OUTPUT);
 }

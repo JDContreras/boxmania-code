@@ -3,6 +3,7 @@
 #define STATEMACHINE_H
 
 #include "StepperMotor.h"
+#include "DCMotor.h"
 
 enum class States {
   DISABLE,
@@ -18,37 +19,37 @@ enum class States {
   ERROR
 };
 
-struct systemConfig { 
-  //since we are using stall detection for homing, home position must be iqual to maxPosition or minPosition
-  bool direction; //0- negative, 1 - positive
-  float velocity; 
-};
 
 class StateMachine {
-public:
-  StateMachine();  // Constructor
-  void update();   // Main update function
-
-private:
-  States currentState;
-  void setState(States newState);
-  // State-specific methods
-  void handleDisable();
-  void handleInitializing();
-  void handleIdle();
-  void handlePositioningX();
-  void handlePositioningY();
-  void handleHolding();
-  void handleCutting();
-  void handleReleasing();
-  void handleOpeningFlaps();
-  void handleFlattening();
-  void handleError();
   public:
-  // Public method to access the current state if needed
-  States getCurrentState() {
-    return currentState;
-  }
+    StateMachine(
+      StepperConfig& cutterConfig,
+      StepperConfig& pusherConfig,
+      DcMotorConfig& wheelConfig
+    );  // Constructor
+
+    void update();   // Main update function
+    States getCurrentState() {
+      return currentState;
+    }
+  private:
+    States currentState;
+    void setState(States newState);
+    // State-specific methods
+    void handleDisable();
+    void handleInitializing();
+    void handleIdle();
+    void handlePositioningX();
+    void handlePositioningY();
+    void handleHolding();
+    void handleCutting();
+    void handleReleasing();
+    void handleOpeningFlaps();
+    void handleFlattening();
+    void handleError();
+    StepperMotor cutter;
+    StepperMotor pusher;
+    DCMotor wheel; 
 };
 
 #endif

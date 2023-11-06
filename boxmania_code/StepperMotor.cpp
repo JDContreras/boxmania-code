@@ -3,6 +3,7 @@
 StepperMotor::StepperMotor(const StepperConfig& config)
   : stepPin(config.stepPin), 
     dirPin(config.dirPin), 
+    enablePin(config.enPin),
     speed(40),
     initialSpeed(config.limits.minVelocity), 
     currentState(MotorState::DISABLE), 

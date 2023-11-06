@@ -1,7 +1,14 @@
 // StateMachine.cpp
 #include "StateMachine.h"
 
-StateMachine::StateMachine() {
+StateMachine::StateMachine(
+  StepperConfig& cutterConfig,
+  StepperConfig& pusherConfig,
+  DcMotorConfig& wheelConfig
+  ) : 
+  cutter(cutterConfig), 
+  pusher(pusherConfig), 
+  wheel(wheelConfig) {
   currentState = States::DISABLE; // Initialize with DISABLE state
 }
 
@@ -43,8 +50,6 @@ void StateMachine::update() {
 void StateMachine::setState(States newState) {
   currentState = newState;
 }
-
-
 
 // Implement the state-specific methods as needed
 void StateMachine::handleDisable() {
