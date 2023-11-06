@@ -12,7 +12,7 @@ struct axisLimits {
 
 struct homingConfig { 
   //since we are using stall detection for homing, home position must be iqual to maxPosition or minPosition
-  bool direction; //0- negative, 1 - positive
+  bool direction; //false- negative, true - positive
   float velocity; 
 };
 
@@ -20,6 +20,7 @@ struct StepperConfig {
   int stepPin;
   int dirPin;
   int stallPin;
+  int enPin;
   int current; //0-100%
   int stallThreshold; //0-200
   int stepPerMilimeter; //steps per mm, depent of the pulley or gearbox
@@ -60,6 +61,7 @@ private:
   TMC2209 driver;
   int stepPin;
   int dirPin;
+  int enablePin;
   int maxSpeed; //max linear speed in mm/s
   MotorState currentState;
   unsigned long lastStepTime; // Time of the last step
