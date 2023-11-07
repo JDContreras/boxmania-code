@@ -13,6 +13,7 @@ public:
 
   void run(int speed);
   void stop();
+  void moveTime(int speed, unsigned long time);
 
 private:
   int forwardPin;

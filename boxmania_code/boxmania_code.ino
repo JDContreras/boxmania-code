@@ -53,9 +53,14 @@ StepperConfig pusherMotor = {
 };
 
 DcMotorConfig wheelMotor = {
-  forwardPin: 2,      // Example value, replace with your pin numbers
-  reversePin: 3,      // Example value, replace with your pin numbers
-  maxSpeed: 100       // Example value, 100 represents 100% maximum speed
+  .forwardPin = 2,      // Example value, replace with your pin numbers
+  .reversePin = 3,      // Example value, replace with your pin numbers
+  .maxSpeed = 100       // Example value, 100 represents 100% maximum speed
+};
+
+Leds leds = {
+  .red = 13,
+  .green = 8 
 };
 
 //StateMachine stateMachine(cutterMotor,pusherMotor,wheelMotor);
@@ -63,7 +68,8 @@ DcMotorConfig wheelMotor = {
 StateMachine stateMachine {
   .cutterConfig = cutterMotor,
   .pusherConfig = pusherMotor,
-  .wheelConfig = wheelMotor
+  .wheelConfig = wheelMotor,
+  .leds = leds
 };
 
 void setup() {

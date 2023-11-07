@@ -178,6 +178,7 @@ void StepperMotor::home(bool execute) {
           lastMicros = micros();
           pulseCount = 0;
           totalPulseCount = 0;
+          axishomed = false;
       }
       break;
     case 10: //homing
