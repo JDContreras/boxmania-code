@@ -4,7 +4,7 @@
 
 #include "StepperMotor.h"
 #include "DCMotor.h"
-
+#define DEBUG
 struct Leds {
   int red;
   int green;
@@ -58,7 +58,7 @@ class StateMachine {
     DCMotor wheel; 
     int redLed;
     int greenLed;
-    bool doHoming
+    bool doHoming;
 };
 
 #endif
