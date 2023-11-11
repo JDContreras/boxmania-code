@@ -27,8 +27,8 @@ struct StepperConfig {
   int stepPerMilimeter; //steps per mm, depent of the pulley or gearbox
   AxisLimits limits;
   HomingConfig homing;
-  TMC2209& driver;
-  //HardwareSerial& serialPort; //use a diferent serial for each motor
+  //TMC2209& driver;
+  HardwareSerial& serialPort; //use a diferent serial for each motor
 };
 
 struct MoveResult {
@@ -90,6 +90,7 @@ private:
   bool prevExecute ;
   uint8_t motorCurrent;
   uint8_t stallThreshold;
+  HardwareSerial& serialPort;
 };
 
 #endif
