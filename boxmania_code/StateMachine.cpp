@@ -60,8 +60,11 @@ void StateMachine::setState(States newState) {
 
 // Implement the state-specific methods as needed
 void StateMachine::handleDisable() {
-  /*
-  // Handle the DISABLE state
+  cutter.configDriver();
+  setState(States::INITIALIZING);
+}
+void StateMachine::handleInitializing() {
+  // Handle the INITIALIZING state
   cutter.enable();
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');  // Read the incoming command
@@ -69,10 +72,19 @@ void StateMachine::handleDisable() {
     bool complete = false;
     FunctionResponse homeResp;
     int distance;
+    int speed;
+    int count = 0;
     switch (input[0]) {
       case 'I':
         Serial.println("Enabling axis");
         cutter.enable();
+        cutter.configDriver();
+      break;
+
+      case 'S':
+        speed = input.substring(2).toInt();
+        Serial.println("setting speed");
+        cutter.setSpeed(speed);
       break;
 
       case 'H':
@@ -81,34 +93,51 @@ void StateMachine::handleDisable() {
         Serial.println("Homing operation started");
         #endif
         
-        doHoming = true;
+        doHoming = false;
+        
         while (!complete){
           homeResp = cutter.home(doHoming);
+          
           if (homeResp.busy){
             doHoming = false;
           }
-          else if (homeResp.done){
+          else{
+            doHoming = true;
+          }
+          if (homeResp.done){
             complete = true;
           }
           else if (homeResp.error){
             #ifdef DEBUG
               Serial.println("Homing fail");
-              complete = true;
+            #endif
+            complete = true;
+          }
+          
+          count++;
+          if (count>400){ //currentSpeed
+            #ifdef DEBUG
+              Serial.print("Busy ");
+              Serial.println(homeResp.busy);
+              Serial.print("Done ");
+              Serial.println(homeResp.done);
+              Serial.print("Error ");
+              Serial.println(homeResp.error);
             #endif
           }
-        
+          
         }
-
+        
         break;
 
       case 'M':
         distance = input.substring(2).toInt();
-        if (distance >= 0 && distance <= 100) {
+        if (distance >= -200 && distance <= 200) {
           // Move to the specified distance
           Serial.print("Moving to position ");
           Serial.print(distance);
           Serial.println("mm");
-          // Replace this with your actual stepper motor movement logic
+          cutter.moveRelative(distance);
         } else {
           Serial.println("Invalid distance. Please use a value between 0 and 100.");
         }
@@ -118,11 +147,7 @@ void StateMachine::handleDisable() {
         Serial.println("Unknown command. Valid commands: 'H' for homing, 'M X' for moving to position X mm.");
     }
   }
-  */
-}
-void StateMachine::handleInitializing() {
-  // Handle the INITIALIZING state
-  // ...
+  
 }
 
 void StateMachine::handleIdle() {

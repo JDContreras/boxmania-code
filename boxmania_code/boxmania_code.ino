@@ -4,8 +4,8 @@
 #include "wiring_private.h" // pinPeripheral() function
 #include <TMC2209.h>
 
-TMC2209 cutter_driver;
-TMC2209 pusher_driver;
+//TMC2209 cutter_driver;
+//TMC2209 pusher_driver;
 Uart Serial2 (&sercom1, 11, 10, SERCOM_RX_PAD_0, UART_TX_PAD_2);
 
 void SERCOM1_Handler()
@@ -20,7 +20,7 @@ StepperConfig cutterMotor = {
     .stallPin = A5,
     .enPin = SCK,
     .current = 50,
-    .stallThreshold = 20,
+    .stallThreshold = 10,
     .stepPerMilimeter = 40,
     .limits = {    //mm              
         .maxPosition = 100.0,
@@ -32,8 +32,8 @@ StepperConfig cutterMotor = {
         .direction = false,       // true for positive direction, false for negative
         .velocity = 20.0
     },
-    .driver = cutter_driver
-    //.serialPort = Serial1      // Initialize with a specific serial port
+    //.driver = cutter_driver,
+    .serialPort = Serial1      // Initialize with a specific serial port
 };
 
 StepperConfig pusherMotor = {
@@ -54,8 +54,8 @@ StepperConfig pusherMotor = {
         .direction = false,       // true for positive direction, false for negative
         .velocity = 20.0
     },
-    .driver = pusher_driver
-    //.serialPort = Serial2      // Initialize with a specific serial port
+    //.driver = pusher_driver,
+    .serialPort = Serial2      // Initialize with a specific serial port
 };
 
 DcMotorConfig wheelMotor = {
@@ -83,14 +83,14 @@ void setup() {
   pinPeripheral(10, PIO_SERCOM);
   pinPeripheral(11, PIO_SERCOM);
   pinMode(LED_BUILTIN, OUTPUT);
-  cutter_driver.setup(Serial1,250000);
 }
 
 void loop() {
   stateMachine.update();
- 
+  /*
   digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
   delay(1000);                      // wait for a second
   digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
   delay(1000);                      // wait for a second
+  */
 }
