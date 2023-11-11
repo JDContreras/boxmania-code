@@ -2,15 +2,16 @@
 #define STEPPERMOTOR_H
 #include <Arduino.h>
 #include <TMC2209.h>
+#include "DataTypes.h"
 
-struct axisLimits {
+struct AxisLimits {
   float maxPosition;
   float minPosition;
   float maxVelocity;
   float minVelocity;
 };
 
-struct homingConfig { 
+struct HomingConfig { 
   //since we are using stall detection for homing, home position must be iqual to maxPosition or minPosition
   bool direction; //false- negative, true - positive
   float velocity; 
@@ -24,14 +25,15 @@ struct StepperConfig {
   int current; //0-100%
   int stallThreshold; //0-200
   int stepPerMilimeter; //steps per mm, depent of the pulley or gearbox
-  axisLimits limits;
-  homingConfig homing;
+  AxisLimits limits;
+  HomingConfig homing;
+  //TMC2209& driver;
   HardwareSerial& serialPort; //use a diferent serial for each motor
 };
 
-struct moveResult {
-  float distance;
-  bool complete;
+struct MoveResult {
+  float distance = 0.0;
+  bool complete = false;
 };
 
 enum class MotorState {
@@ -44,10 +46,10 @@ enum class MotorState {
 class StepperMotor {
 public:
   StepperMotor(const StepperConfig& config);
-  moveResult moveRelative(float distance);
+  MoveResult moveRelative(float distance);
   void moveAbs(float position);
   void enable();
-  void home(bool execute);
+  FunctionResponse home(bool execute);
   bool isHomed();
   void disable();
   void setSpeed(int speed);
@@ -55,6 +57,7 @@ public:
   void setStallThreshold(int threshold);
   bool stallStatus(); //read stallPin to check if the stall is detected. 
   MotorState getState();
+  bool configDriver();
 
 private:
   void pulse(int stepInterval);
@@ -71,7 +74,7 @@ private:
   int stepToDistanceFactor;
   uint32_t mmToPulses(float distance);
   float currentPosition; // Current position of the axis
-  axisLimits limits;
+  AxisLimits limits;
   bool homingDirection;
   int homingStepInterval;
   int stepPerMilimeter;
@@ -85,6 +88,9 @@ private:
   int pulseCount;
   int totalPulseCount;
   bool prevExecute ;
+  uint8_t motorCurrent;
+  uint8_t stallThreshold;
+  HardwareSerial& serialPort;
 };
 
 #endif

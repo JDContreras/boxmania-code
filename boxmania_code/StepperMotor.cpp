@@ -9,7 +9,7 @@ StepperMotor::StepperMotor(const StepperConfig& config)
     currentState(MotorState::DISABLE), 
     limits(config.limits), 
     homingDirection(config.homing.direction), 
-    homingStepInterval(int(1000000.0 / config.homing.velocity * config.stepPerMilimeter)), 
+    homingStepInterval(int(1000000.0 / (config.homing.velocity * config.stepPerMilimeter))), 
     lastStepTime(millis()),  // Initialize lastStepTime
     acceleration(50.0),  // Default acceleration value
     stepPerMilimeter(config.stepPerMilimeter),
@@ -21,53 +21,88 @@ StepperMotor::StepperMotor(const StepperConfig& config)
     maxPulseCount((limits.maxPosition-limits.minPosition)*config.stepPerMilimeter),
     pulseCount(0),
     totalPulseCount(0),
-    prevExecute(false) 
+    prevExecute(false),
+    //driver(config.driver),
+    serialPort(config.serialPort)
   {
   // Initialize digital pins
   pinMode(config.stepPin, OUTPUT);
+  pinMode(config.enPin, OUTPUT);
   pinMode(config.dirPin, OUTPUT);
   pinMode(config.stallPin, INPUT);
-
+  
   // Setup the TMC2209 driver
-  driver.setup(config.serialPort, 500000); //max baudrate
-
-  // Additional setup for the TMC2209 driver
-  driver.setRunCurrent(config.current);
-  driver.setStallGuardThreshold(config.stallThreshold);
-  driver.enableAutomaticCurrentScaling();
+  //driver.setup(Serial1, 250000); //max baudrate
+  
 }
 
-moveResult StepperMotor::moveRelative(float distance) {
+bool StepperMotor::configDriver(){
+  driver.setup(serialPort, 250000); //max baudrate
+  delay(100);
+  if (driver.isSetupAndCommunicating()){
+    driver.disableCoolStep();
+    driver.disableStealthChop();
+    driver.setCoolStepDurationThreshold(1000000);
+    driver.setStealthChopDurationThreshold(10);
+    delay(100);
+    driver.enableStealthChop();
+    driver.enableAutomaticCurrentScaling();
+    driver.enableAutomaticCurrentScaling();
+    driver.setRunCurrent(motorCurrent);
+    driver.setStallGuardThreshold(stallThreshold);
+    driver.setMicrostepsPerStep(8); //TODO ad argument for this
+    Serial.println("driver configured");
+    return true;
+  }
+  else {
+    Serial.println("driver no conected");
+    return false;
+  }
+
+}
+
+MoveResult StepperMotor::moveRelative(float distance) {
+  
   // move implementation
-  moveResult result;
+  MoveResult result;
+  int tempSpeed;
   result.complete = true; // Assume the movement is complete unless stalled
 
   if (speed < initialSpeed) {
-    speed = initialSpeed;
+    tempSpeed = initialSpeed;
+  }
+  else{
+    tempSpeed = speed;
   }
 
   // Calculate the maximum achievable speed based on acceleration and distance
-  float maxAchievableSpeed = sqrt(2 * acceleration * distance);
+  //float maxAchievableSpeed = sqrt(2 * acceleration * distance);
+  float maxAchievableSpeed = sqrt((2 * acceleration * (distance/2)) + (initialSpeed*initialSpeed));
 
   // Ensure that the requested speed is achievable
-  if (speed > maxAchievableSpeed) {
-    speed = maxAchievableSpeed;
+  if (tempSpeed > maxAchievableSpeed) {
+    tempSpeed = maxAchievableSpeed;
   }
-
+  Serial.print("init speed   ");
+  Serial.println(initialSpeed);
+  Serial.print("speed   ");
+  Serial.println(tempSpeed);
   float currentSpeed = initialSpeed; // Start at the initial speed
   float currentDistance = 0; // Initialize the distance traveled
 
   // Calculate time needed for acceleration to reach the target speed
-  float accelerationTime = (speed - initialSpeed) / acceleration;
-
+  float accelerationTime = (tempSpeed - initialSpeed) / acceleration;
+  Serial.print("accelerationTime   ");
+  Serial.println(accelerationTime);
   // Calculate distance covered during acceleration phase
-  float accelerationDistance = 0.5 * (initialSpeed + speed) * accelerationTime;
-
+  float accelerationDistance = 0.5 * (initialSpeed + tempSpeed) * accelerationTime;
+  Serial.print("accelerationDistance   ");
+  Serial.println(accelerationDistance);
   // Calculate the distance for constant speed phase
   float constantSpeedDistance = distance - 2 * accelerationDistance;
 
   // Calculate the time for constant speed phase
-  float constantSpeedTime = constantSpeedDistance / speed;
+  float constantSpeedTime = constantSpeedDistance / tempSpeed;
 
   // Calculate the total move time
   float totalTime = 2 * accelerationTime + constantSpeedTime;
@@ -85,8 +120,15 @@ moveResult StepperMotor::moveRelative(float distance) {
   unsigned long decelerationSteps = totalSteps - accelerationSteps - constantSpeedSteps;
   
   unsigned long reachedSteps = 0;
-
+  Serial.print("total steps   ");
+  Serial.println(totalSteps);
+  Serial.print("accel steps   ");
+  Serial.println(accelerationSteps);
+  Serial.print("diaccel steps   ");
+  Serial.println(accelerationSteps + constantSpeedSteps);
   // Step generation loop
+  int count = 0;
+  float timeFraction = (totalTime/totalSteps);
   for (unsigned long step = 0; step < totalSteps; step++) {
     if (stallStatus()) {
         // Stall detected
@@ -94,22 +136,32 @@ moveResult StepperMotor::moveRelative(float distance) {
         break; // Exit the loop if a stall occurs
     }
     
-
     if (step < accelerationSteps) {
-      // Acceleration phase: Adjust speed and step interval
-      currentSpeed += acceleration * (totalTime / totalSteps);
+  // Acceleration phase: Adjust speed and step interval
+      //currentSpeed = initialSpeed + acceleration * totalTime*( step / totalSteps);
+      currentSpeed = initialSpeed + acceleration * (timeFraction)* step;
     } else if (step >= accelerationSteps && step < accelerationSteps + constantSpeedSteps) {
       // Constant speed phase: Maintain target speed
-      currentSpeed = speed;
+      currentSpeed = tempSpeed;
     } else {
       // Deceleration phase: Adjust speed and step interval
-      currentSpeed -= acceleration * (totalTime / totalSteps);
+      currentSpeed = tempSpeed - acceleration * (timeFraction) * (step - accelerationSteps - constantSpeedSteps);
     }
-    int stepInterval = int(1000000.0 / currentSpeed * stepPerMilimeter);
+    int stepInterval = int(1000000.0 / (currentSpeed * stepPerMilimeter));
     pulse(stepInterval);
-
+    count++;
     reachedSteps++;
-
+    /*
+    if (count>100){ //currentSpeed
+      //Serial.print("step time   ");
+      //Serial.println(driver.getInterstepDuration());
+      Serial.print("stepInterval time   ");
+      Serial.println(stepInterval);
+      Serial.print("speed   ");
+      Serial.println(currentSpeed);
+      count = 0;
+    }
+    */
   }
 
   if (result.complete) {
@@ -121,7 +173,9 @@ moveResult StepperMotor::moveRelative(float distance) {
     result.distance = static_cast<float>(reachedSteps) / stepPerMilimeter;
   }
   currentPosition = currentPosition + result.distance;
+  
   return result;
+  
 }
 
 bool StepperMotor::stallStatus() {
@@ -145,12 +199,19 @@ uint32_t StepperMotor::mmToPulses(float distance) {
 }
 
 void StepperMotor::enable() {
+  
   // enable implementation
+  digitalWrite(enablePin,LOW);
+  delay(200);
+  driver.enable();
+  currentState = MotorState::STANDSTILL;
+  /*
   bool hardware_disabled = driver.hardwareDisabled();
   if (!hardware_disabled){
     driver.enable();
-    currentState = MotorState::STANDSTILL;
+    
   }
+  */
 }
 
 bool StepperMotor::isHomed() {
@@ -167,20 +228,30 @@ void StepperMotor::pulse(int stepInterval) {
   delayMicroseconds(stepInterval-10);
 }
 
-void StepperMotor::home(bool execute) {
+FunctionResponse StepperMotor::home(bool execute) {
+  
   //bool direction = homingDirection ? HIGH : LOW;
   unsigned long currentMicros;
+  FunctionResponse tResponse;
+  
   switch (homingState) {
     case 0: //idle
+    tResponse.busy = false;
+    tResponse.done = false;
+    tResponse.error = false;
       if ((!prevExecute && execute) && (currentState == MotorState::STANDSTILL)) {
           digitalWrite(dirPin, homingDirection);
           homingState = 10;
           lastMicros = micros();
           pulseCount = 0;
           totalPulseCount = 0;
+          axishomed = false;
       }
       break;
     case 10: //homing
+      tResponse.busy = true;
+      tResponse.done = false;
+      tResponse.error = false;
       currentMicros = micros();
       if (currentMicros - lastMicros >= homingStepInterval) {
         lastMicros = currentMicros;
@@ -201,6 +272,9 @@ void StepperMotor::home(bool execute) {
       }
       break;
     case 20: //set position
+      tResponse.busy = false;
+      tResponse.done = true;
+      tResponse.error = false;
       if (homingDirection){
           currentPosition = limits.maxPosition;
       }
@@ -213,15 +287,20 @@ void StepperMotor::home(bool execute) {
       }
       break;
     case 40: //block state
+      tResponse.busy = false;
+      tResponse.done = false;
+      tResponse.error = true;
       homingState = 40; //turn on an LED to indicate the error state
       break;
   }
   prevExecute = execute;
+  return tResponse;
+  
 }
 
 void StepperMotor::disable() {
   // disable implementation
-  driver.disable();
+  //driver.disable();
   currentState = MotorState::DISABLE;
   axishomed = false;
 }
@@ -239,13 +318,11 @@ void StepperMotor::setSpeed(int newSpeed) {
 }
 
 void StepperMotor::setCurrent(int current) {
-  // setCurrent implementation
-  driver.setRunCurrent(current);
+  motorCurrent = current;
 }
 
 void StepperMotor::setStallThreshold(int threshold) {
-  // setStallThreshold implementation
-  driver.setStallGuardThreshold(threshold);
+  stallThreshold = threshold;
 }
 
 MotorState StepperMotor::getState() {
