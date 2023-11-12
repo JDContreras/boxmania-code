@@ -9,7 +9,8 @@ StateMachine::StateMachine(
   Leds& leds
   ) : 
 
-  cutter(cutterConfig), 
+  cutter(cutterConfig),
+  wheelSpeed(100), 
   pusher(pusherConfig),
   wheel(wheelConfig),
   currentState(States::DISABLE),
@@ -60,6 +61,8 @@ void StateMachine::setState(States newState) {
 
 // Implement the state-specific methods as needed
 void StateMachine::handleDisable() {
+  delay(1000);
+  Serial.println("Configuring driver");
   cutter.configDriver();
   setState(States::INITIALIZING);
 }
@@ -75,10 +78,22 @@ void StateMachine::handleInitializing() {
     int speed;
     int count = 0;
     switch (input[0]) {
-      case 'I':
+      case 'E':
         Serial.println("Enabling axis");
+        //cutter.configDriver();
         cutter.enable();
+      break;
+
+      case 'C':
+        Serial.println("Configuring axis");
+        //cutter.configDriver();
         cutter.configDriver();
+      break;
+
+      case 'D':
+        Serial.println("Disabling axis");
+        //cutter.configDriver();
+        cutter.disable();
       break;
 
       case 'S':
@@ -113,7 +128,7 @@ void StateMachine::handleInitializing() {
             #endif
             complete = true;
           }
-          
+          /*
           count++;
           if (count>400){ //currentSpeed
             #ifdef DEBUG
@@ -125,26 +140,38 @@ void StateMachine::handleInitializing() {
               Serial.println(homeResp.error);
             #endif
           }
-          
+          */
         }
         
         break;
 
       case 'M':
         distance = input.substring(2).toInt();
-        if (distance >= -200 && distance <= 200) {
+        if (distance >= -300 && distance <= 300) {
           // Move to the specified distance
           Serial.print("Moving to position ");
           Serial.print(distance);
           Serial.println("mm");
           cutter.moveRelative(distance);
-        } else {
+        } 
+        else {
           Serial.println("Invalid distance. Please use a value between 0 and 100.");
         }
         break;
 
+      case 'N':
+        if (cutter.isHomed()){
+          setState(States::IDLE);
+          Serial.println("Going to IDLE State");
+        }
+        else{
+            Serial.println("home the axis first");
+        }
+        break;
+
+
       default:
-        Serial.println("Unknown command. Valid commands: 'H' for homing, 'M X' for moving to position X mm.");
+        Serial.println("Unknown command. Valid commands: 'H' for homing, 'M X' for moving to position X mm, 'F' to change to IDLE");
     }
   }
   
@@ -152,7 +179,82 @@ void StateMachine::handleInitializing() {
 
 void StateMachine::handleIdle() {
   // Handle the IDLE state
-  // ...
+  // waiting for the box
+  //int time; 
+  if (Serial.available() > 0) {
+    unsigned long time;
+    int tempSpeed;
+    String input = Serial.readStringUntil('\n');  // Read the incoming command
+    input.trim();  // Remove leading/trailing whitespace
+    switch (input[0]) {
+      case 'F':
+        Serial.println("Moving forward");
+        cutter.moveAbs(310);
+      break;
+
+
+      case 'R':
+        cutter.moveAbs(0);
+        Serial.println("Moving reverse");
+
+      break;
+
+      case 'W':
+        Serial.print("Position ");
+        Serial.print(cutter.getCurrentPosition());
+        Serial.println(" mm");
+      break;
+
+      case 'Y':
+        time = input.substring(2).toInt();
+        if (time > 0 && time <= 5000) {
+          // Move to the specified distance
+          Serial.print("Moving wheel ");
+          Serial.print(time);
+          Serial.println(" ms");
+          wheel.moveTime(wheelSpeed, time);
+        } 
+        else {
+          Serial.println("Invalid time. Please use a value between 0 and 5000.");
+        }
+      break;
+
+      case 'Z':
+          time = input.substring(2).toInt();
+          if (time > 0 && time <= 5000) {
+          // Move to the specified distance
+          Serial.print("Moving wheel ");
+          Serial.print(time);
+          Serial.println(" ms");
+          wheel.moveTime(-wheelSpeed, time);
+        }  
+        else {
+          Serial.println("Invalid time. Please use a value between 0 and 5000.");
+        }
+      break;
+
+      case 'S':
+          tempSpeed = input.substring(2).toInt();
+          if (tempSpeed >= 20 && tempSpeed <= 100) {
+          // Move to the specified distance
+          Serial.print("Moving wheel ");
+          Serial.print(time);
+          Serial.println(" ms");
+          wheelSpeed = tempSpeed;
+        }  
+        else {
+          Serial.println("Invalid time. Please use a value between 20 and 100.");
+        }
+      break;
+
+      case 'N':
+        setState(States::IDLE);
+        Serial.println("Going to DISABLE State");
+      break;
+
+
+    }
+  }
 }
 
 void StateMachine::handlePositioningX() {

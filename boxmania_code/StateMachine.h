@@ -55,6 +55,7 @@ class StateMachine {
     void handleError();
     StepperMotor cutter;
     StepperMotor pusher;
+    int wheelSpeed;
     DCMotor wheel; 
     int redLed;
     int greenLed;

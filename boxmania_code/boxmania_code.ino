@@ -19,11 +19,11 @@ StepperConfig cutterMotor = {
     .dirPin = MOSI,
     .stallPin = A5,
     .enPin = SCK,
-    .current = 50,
-    .stallThreshold = 10,
+    .current = 80, //60
+    .stallThreshold = 40,
     .stepPerMilimeter = 40,
     .limits = {    //mm              
-        .maxPosition = 100.0,
+        .maxPosition = 311.0,
         .minPosition = 0.0,
         .maxVelocity = 50.0,
         .minVelocity = 10.0
@@ -45,7 +45,7 @@ StepperConfig pusherMotor = {
     .stallThreshold = 20,
     .stepPerMilimeter = 40,
     .limits = {    //mm              
-        .maxPosition = 100.0,
+        .maxPosition = 200.0,
         .minPosition = 0.0,
         .maxVelocity = 50.0,
         .minVelocity = 10.0
@@ -59,9 +59,9 @@ StepperConfig pusherMotor = {
 };
 
 DcMotorConfig wheelMotor = {
-  .forwardPin = 2,      // Example value, replace with your pin numbers
-  .reversePin = 3,      // Example value, replace with your pin numbers
-  .maxSpeed = 100       // Example value, 100 represents 100% maximum speed
+  .forwardPin = A3,      
+  .reversePin = A4,     
+  .maxSpeed = 100      
 };
 
 Leds leds = {
@@ -80,6 +80,7 @@ StateMachine stateMachine {
 
 
 void setup() {
+  Serial.begin(1000000);
   pinPeripheral(10, PIO_SERCOM);
   pinPeripheral(11, PIO_SERCOM);
   pinMode(LED_BUILTIN, OUTPUT);
@@ -87,10 +88,4 @@ void setup() {
 
 void loop() {
   stateMachine.update();
-  /*
-  digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-  delay(1000);                      // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-  delay(1000);                      // wait for a second
-  */
 }

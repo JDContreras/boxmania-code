@@ -58,8 +58,9 @@ public:
   bool stallStatus(); //read stallPin to check if the stall is detected. 
   MotorState getState();
   bool configDriver();
-
+  float getCurrentPosition();
 private:
+  void toggleEnablePin();
   void pulse(int stepInterval);
   TMC2209 driver;
   int stepPin;
