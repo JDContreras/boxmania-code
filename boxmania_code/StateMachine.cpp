@@ -16,8 +16,8 @@ StateMachine::StateMachine(
   currentState(States::DISABLE),
   redLed(leds.red),
   greenLed(leds.green) {
-  pinMode(redLed, OUTPUT);
-  pinMode(greenLed, OUTPUT);
+  //pinMode(redLed, OUTPUT);
+  //pinMode(greenLed, OUTPUT);
 }
 
 void StateMachine::update() {
@@ -59,16 +59,15 @@ void StateMachine::setState(States newState) {
   currentState = newState;
 }
 
-// Implement the state-specific methods as needed
+
 void StateMachine::handleDisable() {
   delay(1000);
-  Serial.println("Configuring driver");
   cutter.configDriver();
   setState(States::INITIALIZING);
 }
+
 void StateMachine::handleInitializing() {
   // Handle the INITIALIZING state
-  cutter.enable();
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');  // Read the incoming command
     input.trim();  // Remove leading/trailing whitespace
@@ -80,19 +79,23 @@ void StateMachine::handleInitializing() {
     switch (input[0]) {
       case 'E':
         Serial.println("Enabling axis");
-        //cutter.configDriver();
         cutter.enable();
       break;
 
+      case 'a':
+        cutter.printConfig();
+      break;
+
+      case 'b':
+        cutter.printStatus();
+      break;
+
       case 'C':
-        Serial.println("Configuring axis");
-        //cutter.configDriver();
         cutter.configDriver();
       break;
 
       case 'D':
         Serial.println("Disabling axis");
-        //cutter.configDriver();
         cutter.disable();
       break;
 
@@ -104,10 +107,7 @@ void StateMachine::handleInitializing() {
 
       case 'H':
         // Homing operation
-        #ifdef DEBUG
-        Serial.println("Homing operation started");
-        #endif
-        
+        Serial.println("Homing operation started");  
         doHoming = false;
         
         while (!complete){
@@ -233,14 +233,13 @@ void StateMachine::handleIdle() {
         }
       break;
 
-      case 'S':
+      case 's':
           tempSpeed = input.substring(2).toInt();
           if (tempSpeed >= 20 && tempSpeed <= 100) {
           // Move to the specified distance
-          Serial.print("Moving wheel ");
-          Serial.print(time);
-          Serial.println(" ms");
+          Serial.println("Updating speed");
           wheelSpeed = tempSpeed;
+          Serial.println("Done");
         }  
         else {
           Serial.println("Invalid time. Please use a value between 20 and 100.");
@@ -248,8 +247,8 @@ void StateMachine::handleIdle() {
       break;
 
       case 'N':
-        setState(States::IDLE);
-        Serial.println("Going to DISABLE State");
+        setState(States::INITIALIZING);
+        Serial.println("Going to Initializing State");
       break;
 
 

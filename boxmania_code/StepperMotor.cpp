@@ -24,26 +24,19 @@ StepperMotor::StepperMotor(const StepperConfig& config)
     pulseCount(0),
     totalPulseCount(0),
     prevExecute(false),
-    //driver(config.driver),
     serialPort(config.serialPort)
   {
-  
+  pinMode(config.stepPin, OUTPUT);
+  pinMode(config.enPin, OUTPUT);
+  pinMode(config.dirPin, OUTPUT);
+  pinMode(config.stallPin, INPUT);
 }
 
 bool StepperMotor::configDriver(){
-  pinMode(stepPin, OUTPUT);
-  pinMode(enablePin, OUTPUT);
-  pinMode(dirPin, OUTPUT);
+  Serial.println("configuring driver");
   driver.setup(serialPort, 250000); //max baudrate
-  delay(100);
+  delay(200);
   if (driver.isSetupAndCommunicating()){
-    driver.setHardwareEnablePin(-1);
-    driver.setStallGuardThreshold(stallThreshold);
-    driver.setRunCurrent(motorCurrent);
-    driver.setStandstillMode(driver.NORMAL);
-    driver.setHoldCurrent(50);
-    driver.setMicrostepsPerStep(8); //TODO ad argument for this
-
     driver.disableCoolStep();
     driver.disableStealthChop();
     driver.setCoolStepDurationThreshold(1000000);
@@ -51,6 +44,13 @@ bool StepperMotor::configDriver(){
     delay(100);
     driver.enableStealthChop();
     driver.enableAutomaticCurrentScaling();
+    driver.setStallGuardThreshold(stallThreshold);
+    driver.setRunCurrent(motorCurrent);
+    driver.setStandstillMode(driver.NORMAL);
+    driver.setHoldCurrent(50);
+    driver.setMicrostepsPerStep(8); //TODO ad argument for this
+
+    //driver.moveUsingStepDirInterface();
     driver.enable();
     Serial.println("driver configured");
     return true;
@@ -67,13 +67,11 @@ float StepperMotor::getCurrentPosition(){
 }
 
 MoveResult StepperMotor::moveRelative(float distance) {
-  
   // move implementation
   MoveResult result;
   int tempSpeed;
   float tempDistance;
   result.complete = true; // Assume the movement is complete unless stalled
-
 
   if (speed < initialSpeed) {
     tempSpeed = initialSpeed;
@@ -125,6 +123,14 @@ MoveResult StepperMotor::moveRelative(float distance) {
   unsigned long reachedSteps = 0;
   // Step generation loop
   int count = 0;
+
+  Serial.print("total steps   ");
+  Serial.println(totalSteps);
+  Serial.print("accel steps   ");
+  Serial.println(accelerationSteps);
+  Serial.print("diaccel steps   ");
+  Serial.println(accelerationSteps + constantSpeedSteps);
+
   float timeFraction = (totalTime/totalSteps);
   for (unsigned long step = 0; step < totalSteps; step++) {
     if (stallStatus()) {
@@ -189,14 +195,14 @@ uint32_t StepperMotor::mmToPulses(float distance) {
 void StepperMotor::enable() {
   // enable by hardware and software
   driver.enable();
-  digitalWrite(enablePin, LOW);
+  //digitalWrite(enablePin, LOW);
   currentState = MotorState::STANDSTILL;
 }
 
 void StepperMotor::disable() {
   // disable implementation
-  digitalWrite(enablePin, HIGH);
-  //driver.disable();
+  //digitalWrite(enablePin, HIGH);
+  driver.disable();
   currentState = MotorState::DISABLE;
   axishomed = false;
 }
@@ -213,10 +219,12 @@ bool StepperMotor::isHomed() {
 void StepperMotor::pulse(int stepInterval) {
   // Set stepPin high
   PORT->Group[g_APinDescription[stepPin].ulPort].OUTSET.reg = (1ul << g_APinDescription[stepPin].ulPin);
+  PORT->Group[g_APinDescription[13].ulPort].OUTSET.reg = (1ul << g_APinDescription[13].ulPin);
   // Wait for 10 microseconds (you can adjust the delay to match your requirements)
   delayMicroseconds(10);
   // Set stepPin low
   PORT->Group[g_APinDescription[stepPin].ulPort].OUTCLR.reg = (1ul << g_APinDescription[stepPin].ulPin);
+  PORT->Group[g_APinDescription[13].ulPort].OUTCLR.reg = (1ul << g_APinDescription[13].ulPin);
   delayMicroseconds(stepInterval-10);
 }
 
@@ -324,4 +332,55 @@ void StepperMotor::toggleEnablePin(){
 
 MotorState StepperMotor::getState() {
   return currentState;
+}
+
+void StepperMotor::printConfig(){
+  TMC2209::Settings settings = driver.getSettings();
+
+  if (settings.is_communicating) {
+    Serial.println("Stepper Driver Configuration:");
+    Serial.println("Setup: " + String(settings.is_setup));
+    Serial.println("Software Enabled: " + String(settings.software_enabled));
+    Serial.println("Microsteps per Step: " + String(settings.microsteps_per_step));
+    Serial.println("Inverse Motor Direction Enabled: " + String(settings.inverse_motor_direction_enabled));
+    Serial.println("StealthChop Enabled: " + String(settings.stealth_chop_enabled));
+    Serial.println("Standstill Mode: " + String(settings.standstill_mode));
+    Serial.println("IRun Percentage: " + String(settings.irun_percent));
+    Serial.println("IRun Register Value: " + String(settings.irun_register_value));
+    Serial.println("IHold Percentage: " + String(settings.ihold_percent));
+    Serial.println("IHold Register Value: " + String(settings.ihold_register_value));
+    Serial.println("IHoldDelay Percentage: " + String(settings.iholddelay_percent));
+    Serial.println("IHoldDelay Register Value: " + String(settings.iholddelay_register_value));
+    Serial.println("Automatic Current Scaling Enabled: " + String(settings.automatic_current_scaling_enabled));
+    Serial.println("Automatic Gradient Adaptation Enabled: " + String(settings.automatic_gradient_adaptation_enabled));
+    Serial.println("PWM Offset: " + String(settings.pwm_offset));
+    Serial.println("PWM Gradient: " + String(settings.pwm_gradient));
+    Serial.println("CoolStep Enabled: " + String(settings.cool_step_enabled));
+    Serial.println("Analog Current Scaling Enabled: " + String(settings.analog_current_scaling_enabled));
+    Serial.println("Internal Sense Resistors Enabled: " + String(settings.internal_sense_resistors_enabled));
+  } else {
+    Serial.println("Communication: Failed");
+  }
+}
+
+void StepperMotor::printStatus() {
+  TMC2209::Status status = driver.getStatus();
+
+  Serial.println("Stepper Driver Status:");
+
+  Serial.println("Over Temperature Warning: " + String(status.over_temperature_warning));
+  Serial.println("Over Temperature Shutdown: " + String(status.over_temperature_shutdown));
+  Serial.println("Short to Ground A: " + String(status.short_to_ground_a));
+  Serial.println("Short to Ground B: " + String(status.short_to_ground_b));
+  Serial.println("Low Side Short A: " + String(status.low_side_short_a));
+  Serial.println("Low Side Short B: " + String(status.low_side_short_b));
+  Serial.println("Open Load A: " + String(status.open_load_a));
+  Serial.println("Open Load B: " + String(status.open_load_b));
+  Serial.println("Over Temperature 120°C: " + String(status.over_temperature_120c));
+  Serial.println("Over Temperature 143°C: " + String(status.over_temperature_143c));
+  Serial.println("Over Temperature 150°C: " + String(status.over_temperature_150c));
+  Serial.println("Over Temperature 157°C: " + String(status.over_temperature_157c));
+  Serial.println("Current Scaling: " + String(status.current_scaling));
+  Serial.println("StealthChop Mode: " + String(status.stealth_chop_mode));
+  Serial.println("Standstill: " + String(status.standstill));
 }

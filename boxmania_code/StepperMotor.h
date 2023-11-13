@@ -59,6 +59,8 @@ public:
   MotorState getState();
   bool configDriver();
   float getCurrentPosition();
+  void printConfig();
+  void printStatus();
 private:
   void toggleEnablePin();
   void pulse(int stepInterval);

@@ -9,7 +9,7 @@ const uint8_t STALL_GUARD_THRESHOLD = 100;
 int stepPin = MISO;
 int dirPin = MOSI;
 int enPin = SCK;
-int stallPin = A4;
+int stallPin = A5;
 // Instantiate TMC2209
 TMC2209 stepper_driver;
 int count;
@@ -23,7 +23,6 @@ void setup(){
   stepper_driver.setCoolStepDurationThreshold(1000000);
   stepper_driver.setStealthChopDurationThreshold(10);
   delay(DELAY);
-  //stepper_driver.enableCoolStep();
   stepper_driver.enableStealthChop();
   stepper_driver.enableAutomaticCurrentScaling();
   stepper_driver.setRunCurrent(RUN_CURRENT_PERCENT);
