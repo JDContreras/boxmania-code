@@ -5,6 +5,8 @@ StepperMotor::StepperMotor(const StepperConfig& config)
     dirPin(config.dirPin), 
     enablePin(config.enPin),
     speed(40),
+    holdCurrent(config.holdCurrent),
+    microsteps(config.microsteps),
     initialSpeed(config.limits.minVelocity), 
     currentState(MotorState::DISABLE), 
     stallThreshold(config.stallThreshold),
@@ -37,20 +39,36 @@ bool StepperMotor::configDriver(){
   driver.setup(serialPort, 250000); //max baudrate
   delay(200);
   if (driver.isSetupAndCommunicating()){
-    driver.disableCoolStep();
+    Serial.println("Setting up driver parameters...");
+
+    driver.disableCoolStep(); //necesary to use stall detection
     driver.disableStealthChop();
     driver.setCoolStepDurationThreshold(1000000);
     driver.setStealthChopDurationThreshold(10);
     delay(100);
+
     driver.enableStealthChop();
     driver.enableAutomaticCurrentScaling();
-    driver.setStallGuardThreshold(stallThreshold);
-    driver.setRunCurrent(motorCurrent);
-    driver.setStandstillMode(driver.NORMAL);
-    driver.setHoldCurrent(50);
-    driver.setMicrostepsPerStep(8); //TODO ad argument for this
 
-    //driver.moveUsingStepDirInterface();
+    Serial.print("Setting stallGuardThreshold: ");
+    Serial.println(stallThreshold);
+    driver.setStallGuardThreshold(stallThreshold);
+
+    Serial.print("Setting runCurrent: ");
+    Serial.println(motorCurrent);
+    driver.setRunCurrent(motorCurrent);
+
+    driver.setStandstillMode(driver.NORMAL);
+
+    Serial.print("Setting HoldCurrent: ");
+    Serial.println(holdCurrent);
+    driver.setHoldCurrent(holdCurrent);
+
+    Serial.print("Setting MicrostepsPerStep: ");
+    Serial.println(microsteps);
+    driver.setMicrostepsPerStep(microsteps); //TODO ad argument for this
+
+    driver.enable();
     driver.enable();
     Serial.println("driver configured");
     return true;
@@ -239,7 +257,7 @@ FunctionResponse StepperMotor::home(bool execute) {
     tResponse.done = false;
     tResponse.error = false;
       if ((!prevExecute && execute) && (currentState == MotorState::STANDSTILL)) {
-          digitalWrite(dirPin, homingDirection);
+          //digitalWrite(dirPin, homingDirection);
           homingState = 10;
           lastMicros = micros();
           pulseCount = 0;
@@ -248,6 +266,7 @@ FunctionResponse StepperMotor::home(bool execute) {
       }
       break;
     case 10: //homing
+      digitalWrite(dirPin, homingDirection);
       tResponse.busy = true;
       tResponse.done = false;
       tResponse.error = false;

@@ -22,6 +22,8 @@ void DCMotor::run(int speed) {
   } else {
     digitalWrite(forwardPin, LOW);
     digitalWrite(reversePin, LOW);
+    analogWrite(forwardPin, 0);
+    analogWrite(reversePin, 0);
   }
 }
 
@@ -30,7 +32,9 @@ void DCMotor::stop() {
 }
 
 void DCMotor::moveTime(int speed, unsigned long time) {
+  Serial.println("Runing Wheel");
   run(speed);   // Start the motor with the given speed
   delay(time);  // Delay for the specified duration
   stop();     // Stop the motor after the delay
+  Serial.println("Stop Wheel");
 }
