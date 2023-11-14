@@ -15,25 +15,27 @@ void SERCOM1_Handler()
 
 
 StepperConfig cutterMotor = {
-    .stepPin = MISO,                
+    .stepPin = SCK,                
     .dirPin = MOSI,
     .stallPin = A5,
-    .enPin = SCK,
-    .current = 80, //60
+    .enPin = MISO,
+    .current = 60, //60-40/30
     .stallThreshold = 40,
     .stepPerMilimeter = 40,
+    .microsteps = 8,
+    .holdCurrent = 40,
     .limits = {    //mm              
         .maxPosition = 311.0,
         .minPosition = 0.0,
         .maxVelocity = 50.0,
         .minVelocity = 10.0
     },
-    .homing = {                 // Initialize the nested struct
+    .homing = {                 
         .direction = false,       // true for positive direction, false for negative
         .velocity = 20.0
     },
     //.driver = cutter_driver,
-    .serialPort = Serial1      // Initialize with a specific serial port
+    .serialPort = Serial1      // Initialize with a specific hardware serial port for each motor
 };
 
 StepperConfig pusherMotor = {
@@ -44,6 +46,8 @@ StepperConfig pusherMotor = {
     .current = 50,
     .stallThreshold = 20,
     .stepPerMilimeter = 40,
+    .microsteps = 8,
+    .holdCurrent = 50,
     .limits = {    //mm              
         .maxPosition = 200.0,
         .minPosition = 0.0,
