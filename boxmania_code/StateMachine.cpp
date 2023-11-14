@@ -143,19 +143,6 @@ void StateMachine::handleInitializing() {
             complete = true;
           }
           
-          count++;
-          if (count>1000){ //currentSpeed
-            #ifdef DEBUG
-              Serial.print("Busy ");
-              Serial.println(homeResp.busy);
-              Serial.print("Done ");
-              Serial.println(homeResp.done);
-              Serial.print("Error ");
-              Serial.println(homeResp.error);
-            #endif
-            count = 0;
-          }
-          
         }
         
         break;
@@ -175,8 +162,8 @@ void StateMachine::handleInitializing() {
         break;
 
       case 'W':   //go to wheel control
-        setState(States::IDLE);
-        Serial.println("Going to IDLE State");
+        setState(States::POSITIONING_X);
+        Serial.println("Going to Pos X State");
 
         break;
 
