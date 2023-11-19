@@ -4,15 +4,6 @@
 #include "wiring_private.h" // pinPeripheral() function
 #include <TMC2209.h>
 
-//TMC2209 cutter_driver;
-//TMC2209 pusher_driver;
-Uart Serial2 (&sercom1, 11, 10, SERCOM_RX_PAD_0, UART_TX_PAD_2);
-
-void SERCOM1_Handler()
-{
-  Serial2.IrqHandler();
-}
-
 
 StepperConfig cutterMotor = {
     .stepPin = SCK,                
@@ -34,22 +25,22 @@ StepperConfig cutterMotor = {
         .direction = false,       // true for positive direction, false for negative
         .velocity = 20.0
     },
-    //.driver = cutter_driver,
-    .serialPort = Serial1      // Initialize with a specific hardware serial port for each motor
+    .serialPort = Serial1,
+    .address = 1
 };
 
 StepperConfig pusherMotor = {
     .stepPin = 6,                
     .dirPin = 5,
     .stallPin = 9,
-    .enPin = 12,
+    .enPin = 10,
     .current = 50,
     .stallThreshold = 20,
     .stepPerMilimeter = 40,
     .microsteps = 8,
-    .holdCurrent = 50,
+    .holdCurrent = 40,
     .limits = {    //mm              
-        .maxPosition = 200.0,
+        .maxPosition = 310.0,
         .minPosition = 0.0,
         .maxVelocity = 50.0,
         .minVelocity = 10.0
@@ -58,8 +49,8 @@ StepperConfig pusherMotor = {
         .direction = false,       // true for positive direction, false for negative
         .velocity = 20.0
     },
-    //.driver = pusher_driver,
-    .serialPort = Serial2      // Initialize with a specific serial port
+    .serialPort = Serial1,
+    .address = 3
 };
 
 DcMotorConfig wheelMotor = {
@@ -85,9 +76,6 @@ StateMachine stateMachine {
 
 void setup() {
   Serial.begin(1000000);
-  pinPeripheral(10, PIO_SERCOM);
-  pinPeripheral(11, PIO_SERCOM);
-  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
