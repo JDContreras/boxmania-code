@@ -16,6 +16,7 @@ void DCMotor::run(int speed) {
   if (speed > 0) {
     analogWrite(forwardPin, map(speed, 0, 100, 0, 255));
     digitalWrite(reversePin, LOW);
+    
   } else if (speed < 0) {
     analogWrite(reversePin, map(abs(speed), 0, 100, 0, 255));
     digitalWrite(forwardPin, LOW);

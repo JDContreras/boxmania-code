@@ -29,7 +29,8 @@ struct StepperConfig {
   uint8_t holdCurrent;
   AxisLimits limits;
   HomingConfig homing;
-  HardwareSerial& serialPort; //use a diferent serial for each motor
+  HardwareSerial& serialPort; 
+  uint8_t address;
 };
 
 struct MoveResult {
@@ -59,6 +60,7 @@ public:
   bool stallStatus(); //read stallPin to check if the stall is detected. 
   MotorState getState();
   bool configDriver();
+  bool setupDriver();
   float getCurrentPosition();
   void printConfig();
   void printStatus();
@@ -95,6 +97,7 @@ private:
   uint8_t motorCurrent;
   uint8_t stallThreshold;
   HardwareSerial& serialPort;
+  uint8_t address;
   uint16_t microsteps;
   uint8_t holdCurrent;
 };

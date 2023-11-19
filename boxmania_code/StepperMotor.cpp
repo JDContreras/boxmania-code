@@ -26,7 +26,8 @@ StepperMotor::StepperMotor(const StepperConfig& config)
     pulseCount(0),
     totalPulseCount(0),
     prevExecute(false),
-    serialPort(config.serialPort)
+    serialPort(config.serialPort),
+    address(config.address)
   {
   pinMode(config.stepPin, OUTPUT);
   pinMode(config.enPin, OUTPUT);
@@ -34,13 +35,75 @@ StepperMotor::StepperMotor(const StepperConfig& config)
   pinMode(config.stallPin, INPUT);
 }
 
+bool StepperMotor::setupDriver(){
+  Serial.print("setting up driver with address: ");
+  Serial.println(address);
+  //TMC2209::SerialAddress driverAddress;
+  switch (address) {
+    case 0:
+      //driverAddress = TMC2209::SERIAL_ADDRESS_0;
+      driver.setup(serialPort, 250000,TMC2209::SERIAL_ADDRESS_0); //max baudrate
+      break;
+    case 1:
+      //driverAddress = TMC2209::SERIAL_ADDRESS_1;
+      driver.setup(serialPort, 250000,TMC2209::SERIAL_ADDRESS_1);
+      break;
+    case 2:
+      //driverAddress = TMC2209::SERIAL_ADDRESS_2;
+      driver.setup(serialPort, 250000,TMC2209::SERIAL_ADDRESS_2);
+      break;
+    case 3:
+      //driverAddress = TMC2209::SERIAL_ADDRESS_3;
+      driver.setup(serialPort, 250000,TMC2209::SERIAL_ADDRESS_3);
+      break;
+    default:
+      Serial.println("Invalid address");
+      return false;
+  }
+  //driver.setup(serialPort, 250000,driverAddress); //max baudrate
+  driver.setReplyDelay(4);
+  delay(400);
+  if (driver.isSetupAndCommunicating()){
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
+
 bool StepperMotor::configDriver(){
-  Serial.println("configuring driver");
-  driver.setup(serialPort, 250000); //max baudrate
+  Serial.print("configuring driver with address: ");
+  Serial.println(address);
+  /*
+  switch (address) {
+    case 0:
+      //driverAddress = TMC2209::SERIAL_ADDRESS_0;
+      driver.setup(serialPort, 250000,TMC2209::SERIAL_ADDRESS_0); //max baudrate
+      break;
+    case 1:
+      //driverAddress = TMC2209::SERIAL_ADDRESS_1;
+      driver.setup(serialPort, 250000,TMC2209::SERIAL_ADDRESS_1);
+      break;
+    case 2:
+      //driverAddress = TMC2209::SERIAL_ADDRESS_2;
+      driver.setup(serialPort, 250000,TMC2209::SERIAL_ADDRESS_2);
+      break;
+    case 3:
+      //driverAddress = TMC2209::SERIAL_ADDRESS_3;
+      driver.setup(serialPort, 250000,TMC2209::SERIAL_ADDRESS_3);
+      break;
+    default:
+      Serial.println("Invalid address");
+      return false;
+  }
+  //driver.setup(serialPort, 250000,driverAddress); //max baudrate
+  driver.setReplyDelay(4);
   delay(200);
+  */
   if (driver.isSetupAndCommunicating()){
     Serial.println("Setting up driver parameters...");
-
+    driver.setHardwareEnablePin(enablePin);
     driver.disableCoolStep(); //necesary to use stall detection
     driver.disableStealthChop();
     driver.setCoolStepDurationThreshold(1000000);
@@ -74,10 +137,9 @@ bool StepperMotor::configDriver(){
     return true;
   }
   else {
-    Serial.println("driver no conected");
+    Serial.println("driver no conected or set up");
     return false;
   }
-
 }
 
 float StepperMotor::getCurrentPosition(){
