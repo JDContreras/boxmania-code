@@ -35,32 +35,35 @@ StepperMotor::StepperMotor(const StepperConfig& config)
   pinMode(config.stallPin, INPUT);
 }
 
+void StepperMotor::checkDriver(){
+  Serial.print("isCommunicating: ");
+  Serial.println(driver.isCommunicating());
+  Serial.print("isSetupAndCommunicating: ");
+  Serial.println(driver.isSetupAndCommunicating());
+  Serial.print("isCommunicatingButNotSetup: ");
+  Serial.println(driver.isCommunicatingButNotSetup());
+}
+
 bool StepperMotor::setupDriver(){
   Serial.print("setting up driver with address: ");
   Serial.println(address);
-  //TMC2209::SerialAddress driverAddress;
   switch (address) {
     case 0:
-      //driverAddress = TMC2209::SERIAL_ADDRESS_0;
-      driver.setup(serialPort, 250000,TMC2209::SERIAL_ADDRESS_0); //max baudrate
+      driver.setup(serialPort, BAUD_RATE,TMC2209::SERIAL_ADDRESS_0);
       break;
     case 1:
-      //driverAddress = TMC2209::SERIAL_ADDRESS_1;
-      driver.setup(serialPort, 250000,TMC2209::SERIAL_ADDRESS_1);
+      driver.setup(serialPort, BAUD_RATE,TMC2209::SERIAL_ADDRESS_1);
       break;
     case 2:
-      //driverAddress = TMC2209::SERIAL_ADDRESS_2;
-      driver.setup(serialPort, 250000,TMC2209::SERIAL_ADDRESS_2);
+      driver.setup(serialPort, BAUD_RATE,TMC2209::SERIAL_ADDRESS_2);
       break;
     case 3:
-      //driverAddress = TMC2209::SERIAL_ADDRESS_3;
-      driver.setup(serialPort, 250000,TMC2209::SERIAL_ADDRESS_3);
+      driver.setup(serialPort, BAUD_RATE,TMC2209::SERIAL_ADDRESS_3);
       break;
     default:
       Serial.println("Invalid address");
       return false;
   }
-  //driver.setup(serialPort, 250000,driverAddress); //max baudrate
   driver.setReplyDelay(4);
   delay(400);
   if (driver.isSetupAndCommunicating()){

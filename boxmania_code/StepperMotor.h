@@ -4,6 +4,8 @@
 #include <TMC2209.h>
 #include "DataTypes.h"
 
+
+
 struct AxisLimits {
   float maxPosition;
   float minPosition;
@@ -61,10 +63,12 @@ public:
   MotorState getState();
   bool configDriver();
   bool setupDriver();
+  void checkDriver();
   float getCurrentPosition();
   void printConfig();
   void printStatus();
 private:
+  static const int BAUD_RATE = 250000;
   void toggleEnablePin();
   void pulse(int stepInterval);
   TMC2209 driver;
