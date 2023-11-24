@@ -70,7 +70,8 @@ StateMachine stateMachine {
   .cutterConfig = cutterMotor,
   .pusherConfig = pusherMotor,
   .wheelConfig = wheelMotor,
-  .leds = leds
+  .leds = leds,
+  .triggerPin = A2
 };
 
 

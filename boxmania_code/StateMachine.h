@@ -31,7 +31,8 @@ class StateMachine {
       StepperConfig& cutterConfig,
       StepperConfig& pusherConfig,
       DcMotorConfig& wheelConfig,
-      Leds& leds
+      Leds& leds,
+      int triggerPin
     );  // Constructor
 
     void update();   // Main update function
@@ -59,6 +60,7 @@ class StateMachine {
     DCMotor wheel; 
     int redLed;
     int greenLed;
+    int triggerPin;
     bool doHoming;
 };
 

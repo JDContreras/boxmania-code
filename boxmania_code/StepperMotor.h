@@ -51,7 +51,7 @@ class StepperMotor {
 public:
   StepperMotor(const StepperConfig& config);
   MoveResult moveRelative(float distance);
-  void moveAbs(float position);
+  MoveResult moveAbs(float position);
   void enable();
   FunctionResponse home(bool execute);
   bool isHomed();

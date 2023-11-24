@@ -236,7 +236,7 @@ MoveResult StepperMotor::moveRelative(float distance) {
   
 }
 
-void StepperMotor::moveAbs(float targetPosition) {
+MoveResult StepperMotor::moveAbs(float targetPosition) {
   // Calculate the relative distance to move from the current position to the target position
   targetPosition = constrain(targetPosition, limits.minPosition, limits.maxPosition);
 
@@ -245,10 +245,8 @@ void StepperMotor::moveAbs(float targetPosition) {
   Serial.print(relativeDistance);
   Serial.println("mm");
   // Call moveRelative to execute the motion
-  moveRelative(relativeDistance);
-
-  // Update the current position if the motion is successful
-  //currentPosition = targetPosition;
+  MoveResult result = moveRelative(relativeDistance);
+  return result;
 }
 
 uint32_t StepperMotor::mmToPulses(float distance) {
