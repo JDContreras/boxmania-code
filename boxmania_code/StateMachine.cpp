@@ -62,11 +62,24 @@ void StateMachine::setState(States newState) {
 
 
 void StateMachine::handleDisable() {
-  //set up driver
-  //configure drivers
-  //disable all actuators
-  //red led flashing 
-  setState(States::INITIALIZING);
+  // set up and configure drivers
+  bool setupSuccess = cutter.setupDriver() && pusher.setupDriver();
+
+  if (setupSuccess) {
+    Serial.println("Driver setup successful.");
+    //configure stepper drivers
+    cutter.configDriver();
+    pusher.configDriver();
+    // disable all actuators (if needed)
+    cutter.disable();
+    pusher.disable();
+    wheel.stop(); 
+
+    setState(States::INITIALIZING);
+  } else {
+    Serial.println("Driver setup failed. Retrying...");
+    //red led flashing
+  }
 }
 
 void StateMachine::handleInitializing() {
