@@ -67,6 +67,7 @@ public:
   float getCurrentPosition();
   void printConfig();
   void printStatus();
+  bool isSetup();
 private:
   static const int BAUD_RATE = 250000;
   void toggleEnablePin();
