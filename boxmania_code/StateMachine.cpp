@@ -1,6 +1,7 @@
 // StateMachine.cpp
 #include "StateMachine.h"
 #include <Arduino.h>
+#include <sam.h>
 
 StateMachine::StateMachine(
   StepperConfig& cutterConfig,
@@ -61,6 +62,10 @@ void StateMachine::setState(States newState) {
 
 
 void StateMachine::handleDisable() {
+  //set up driver
+  //configure drivers
+  //disable all actuators
+  //red led flashing 
   setState(States::INITIALIZING);
 }
 
@@ -94,6 +99,14 @@ void StateMachine::handleInitializing() {
         }
       break;
 
+      case 'J':
+        cutter.checkDriver();
+      break;
+
+      case 'j':
+        pusher.checkDriver();
+      break;
+
       case 'E':
         Serial.println("Enabling cutter");
         cutter.enable();
@@ -110,18 +123,6 @@ void StateMachine::handleInitializing() {
 
       case 'a':
         pusher.printConfig();
-      break;
-
-      case 't':
-        threshold = input.substring(2).toInt();
-        if (threshold<1 && threshold>200) {
-          Serial.println("threshold out of range");
-        }
-        else{
-          Serial.println("threshold update");
-          cutter.setStallThreshold(threshold);
-        }
-        
       break;
 
       case 'C':
