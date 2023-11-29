@@ -19,6 +19,7 @@ private:
   int forwardPin;
   int reversePin;
   int maxSpeed;
+  int prevSpeed;
 };
 
 #endif

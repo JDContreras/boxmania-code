@@ -2,7 +2,7 @@
 #include <Arduino.h>
 
 DCMotor::DCMotor(DcMotorConfig& config)
-  : forwardPin(config.forwardPin), reversePin(config.reversePin) {
+  : forwardPin(config.forwardPin), reversePin(config.reversePin), prevSpeed(0) {
   maxSpeed = constrain(config.maxSpeed, 0, 100); //speed limit to 100
   pinMode(forwardPin, OUTPUT);
   pinMode(reversePin, OUTPUT);
@@ -12,7 +12,17 @@ DCMotor::DCMotor(DcMotorConfig& config)
 void DCMotor::run(int speed) {
   // Constrain the speed to the range -maxSpeed to maxSpeed
   speed = constrain(speed, -maxSpeed, maxSpeed);
-  delay(200); //wait to stop when changing the direction
+  //check if there is a change in direction
+
+  if (speed * prevSpeed < 0) {
+    // Change in direction, stop the motor for 200ms
+    analogWrite(forwardPin, 0);
+    analogWrite(reversePin, 0);
+    digitalWrite(reversePin, LOW);
+    digitalWrite(forwardPin, LOW);
+    delay(200);
+  }
+
   if (speed > 0) {
     analogWrite(forwardPin, map(speed, 0, 100, 0, 255));
     digitalWrite(reversePin, LOW);
@@ -26,6 +36,7 @@ void DCMotor::run(int speed) {
     analogWrite(forwardPin, 0);
     analogWrite(reversePin, 0);
   }
+  prevSpeed = speed;
 }
 
 void DCMotor::stop() {
