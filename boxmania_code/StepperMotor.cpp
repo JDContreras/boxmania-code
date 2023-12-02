@@ -4,7 +4,7 @@ StepperMotor::StepperMotor(const StepperConfig& config)
   : stepPin(config.stepPin), 
     dirPin(config.dirPin), 
     enablePin(config.enPin),
-    speed(40),
+    speed(config.limits.maxVelocity),
     holdCurrent(config.holdCurrent),
     microsteps(config.microsteps),
     initialSpeed(config.limits.minVelocity), 
@@ -113,7 +113,6 @@ bool StepperMotor::configDriver(){
     Serial.println(microsteps);
     driver.setMicrostepsPerStep(microsteps); //TODO ad argument for this
 
-    driver.enable();
     driver.enable();
     Serial.println("driver configured");
     return true;

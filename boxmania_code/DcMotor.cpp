@@ -2,7 +2,7 @@
 #include <Arduino.h>
 
 DCMotor::DCMotor(DcMotorConfig& config)
-  : forwardPin(config.forwardPin), reversePin(config.reversePin) {
+  : forwardPin(config.forwardPin), reversePin(config.reversePin), prevSpeed(0) {
   maxSpeed = constrain(config.maxSpeed, 0, 100); //speed limit to 100
   pinMode(forwardPin, OUTPUT);
   pinMode(reversePin, OUTPUT);

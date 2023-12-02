@@ -247,8 +247,21 @@ void StateMachine::handleIdle() {
   //int time; 
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');  // Read the incoming command
+    int speed = 50;
     input.trim();  // Remove leading/trailing whitespace
     switch (input[0]) {
+      case 'S':
+        speed = input.substring(2).toInt();
+        Serial.println("setting speed");
+        cutter.setSpeed(speed);
+      break;
+
+      case 's':
+        speed = input.substring(2).toInt();
+        Serial.println("setting speed");
+        pusher.setSpeed(speed);
+      break;
+      
       case 'F':
         Serial.println("Moving forward");
         cutter.moveAbs(310);
