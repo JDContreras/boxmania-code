@@ -4,7 +4,7 @@ StepperMotor::StepperMotor(const StepperConfig& config)
   : stepPin(config.stepPin), 
     dirPin(config.dirPin), 
     enablePin(config.enPin),
-    speed(40),
+    speed(config.limits.),
     holdCurrent(config.holdCurrent),
     microsteps(config.microsteps),
     initialSpeed(config.limits.minVelocity), 
@@ -349,7 +349,7 @@ FunctionResponse StepperMotor::home(bool execute) {
       }
 
       if (!execute) {
-        homingState = 10;
+        homingState = 0;
       }
 
 

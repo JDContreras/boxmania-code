@@ -89,8 +89,8 @@ void StateMachine::handleInitializing() {
   cutter.enable();
   pusher.enable();
 
-  // Rotate the wheel in reverse for 500ms at 60% spped
-  wheel.moveTime(-60, 500); 
+  // Rotate the wheel in reverse for 200ms at 60% spped
+  wheel.moveTime(-60, 200); 
 
   // Home the drivers
   FunctionResponse homeRespCutter;
@@ -99,62 +99,73 @@ void StateMachine::handleInitializing() {
   bool doHomingCutter = false;
   bool homingPusherComplete  = false;      
   bool homingCutterComplete  = false;   
-
-  while (!homingPusherComplete && !homingCutterComplete){
+  Serial.println("homing");
+  while (!(homingPusherComplete && homingCutterComplete)){
     homeRespCutter = cutter.home(doHomingCutter);
     homeRespPusher = pusher.home(doHomingPusher);
     
-    if (homeRespCutter.busy){
+    if (homeRespCutter.busy || homingCutterComplete){
       doHomingCutter = false;
     }
     else{
       doHomingCutter = true;
     }
-    if (homeRespCutter.done){
+
+    if (homeRespCutter.done && !homingCutterComplete){
       homingCutterComplete = true;
-      Serial.println("Homing cuter done");
+      Serial.println("Homing cutter done");
     }
     else if (homeRespCutter.error){
       Serial.println("Homing cutter fail");
       homingCutterComplete = true;
     }
 
-    if (homeRespPusher.busy){
+    if (homeRespPusher.busy || homingPusherComplete){
       doHomingPusher = false;
     }
     else{
       doHomingPusher = true;
     }
-    if (homeRespPusher.done){
+
+    if (homeRespPusher.done && !homingPusherComplete){
       homingPusherComplete = true;
-      Serial.println("Homing cuter done");
+      Serial.println("Homing pusher done");
     }
     else if (homeRespPusher.error){
-      Serial.println("Homing cutter fail");
+      Serial.println("Homing pusher fail");
       homingPusherComplete = true;
     }
   }
 
   if (cutter.isHomed() && pusher.isHomed()) {
     // Successfully homed both motors
+    Serial.println("going to IDLE");
     setState(States::IDLE);
   } else {
     // Homing failed, handle error state
+    Serial.println("going to ERROR");
     setState(States::ERROR);
   }
 }
 
 void StateMachine::handleIdle() {
   // Check the digital input
+
+  /*
   if (analogRead(triggerPin) > 1000) {
     setState(States::POSITIONING_X);
   }
+  */
+  delay(3000);
+  Serial.println("going to POSITIONING_X");
+  delay(500);
+  setState(States::POSITIONING_X);
   // If the condition is not met, remain in the IDLE state
 }
 
 void StateMachine::handlePositioningX() {
   // Move pusher to position 10mm
-  MoveResult moveResult = pusher.moveAbs(10.0);
+  MoveResult moveResult = pusher.moveAbs(65.0);
 
   // Check if the operation is complete and successful
   if (moveResult.complete) {
@@ -169,6 +180,9 @@ void StateMachine::handlePositioningX() {
 void StateMachine::handlePositioningY() {
   // Handle the POSITIONING_Y state
   // wheel sequence
+  wheel.moveTime(50, 400); 
+  wheel.moveTime(-100, 200);
+  setState(States::CUTTING);
 }
 
 void StateMachine::handleHolding() {
@@ -199,7 +213,9 @@ void StateMachine::handleReleasing() {
 
 void StateMachine::handleOpeningFlaps() {
   // Handle the OPENING_FLAPS state
-  // ...
+  wheel.moveTime(100, 300); 
+  wheel.moveTime(-100, 300);
+  setState(States::FLATTENING);
 }
 
 void StateMachine::handleFlattening() {

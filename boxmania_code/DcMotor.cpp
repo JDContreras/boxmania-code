@@ -24,12 +24,14 @@ void DCMotor::run(int speed) {
   }
 
   if (speed > 0) {
-    analogWrite(forwardPin, map(speed, 0, 100, 0, 255));
+    analogWrite(reversePin, 0);
     digitalWrite(reversePin, LOW);
+    analogWrite(forwardPin, map(speed, 0, 100, 0, 255));
     
   } else if (speed < 0) {
-    analogWrite(reversePin, map(abs(speed), 0, 100, 0, 255));
+    analogWrite(forwardPin, 0);
     digitalWrite(forwardPin, LOW);
+    analogWrite(reversePin, map(abs(speed), 0, 100, 0, 255));
   } else {
     digitalWrite(forwardPin, LOW);
     digitalWrite(reversePin, LOW);
