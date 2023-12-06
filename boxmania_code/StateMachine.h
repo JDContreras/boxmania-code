@@ -5,10 +5,17 @@
 #include "StepperMotor.h"
 #include "DCMotor.h"
 #define DEBUG
-struct Leds {
+
+struct LedsPins {
   int red;
   int green;
 };
+
+struct SensorsPins {
+  int IR;
+  int LS;
+};
+
 
 enum class States {
   DISABLE,
@@ -31,8 +38,8 @@ class StateMachine {
       StepperConfig& cutterConfig,
       StepperConfig& pusherConfig,
       DcMotorConfig& wheelConfig,
-      Leds& leds,
-      int triggerPin
+      LedsPins leds,
+      SensorsPins sensors
     );  // Constructor
 
     void update();   // Main update function
@@ -61,6 +68,7 @@ class StateMachine {
     int redLed;
     int greenLed;
     int triggerPin;
+    int lidPin;
     bool doHoming;
 };
 

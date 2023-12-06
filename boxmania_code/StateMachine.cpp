@@ -7,10 +7,11 @@ StateMachine::StateMachine(
   StepperConfig& cutterConfig,
   StepperConfig& pusherConfig,
   DcMotorConfig& wheelConfig,
-  Leds& leds,
-  int triggerPin
+  LedsPins leds,
+  SensorsPins sensors
   ): 
-  triggerPin(triggerPin),
+  triggerPin(sensors.IR),
+  lidPin(sensors.LS),
   wheelSpeed(100), 
   pusher(pusherConfig),
   cutter(cutterConfig),
@@ -145,7 +146,7 @@ void StateMachine::handleInitializing() {
 
 void StateMachine::handleIdle() {
   // Check the digital input
-  if (digitalRead(triggerPin) == HIGH) {
+  if (analogRead(triggerPin) > 1000) {
     setState(States::POSITIONING_X);
   }
   // If the condition is not met, remain in the IDLE state
@@ -167,7 +168,7 @@ void StateMachine::handlePositioningX() {
 
 void StateMachine::handlePositioningY() {
   // Handle the POSITIONING_Y state
-  // ...
+  // wheel sequence
 }
 
 void StateMachine::handleHolding() {
