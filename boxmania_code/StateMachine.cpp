@@ -264,7 +264,7 @@ void StateMachine::handleIdle() {
       
       case 'F':
         Serial.println("Moving forward");
-        cutter.moveAbs(310);
+        cutter.moveAbs(370);
       break;
 
       case 'R':
@@ -274,7 +274,7 @@ void StateMachine::handleIdle() {
 
       case 'f':
         Serial.println("Moving forward");
-        pusher.moveAbs(297);
+        pusher.moveAbs(320);
       break;
 
       case 'r':
