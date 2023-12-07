@@ -18,7 +18,8 @@ StateMachine::StateMachine(
   wheel(wheelConfig),
   currentState(States::DISABLE),
   redLed(leds.red),
-  greenLed(leds.green) {
+  greenLed(leds.green),
+  pixels(NUMPIXELS,leds.red, NEO_GRB + NEO_KHZ800) {
   //pinMode(redLed, OUTPUT);
   //pinMode(greenLed, OUTPUT);
 }
@@ -64,6 +65,9 @@ void StateMachine::setState(States newState) {
 
 
 void StateMachine::handleDisable() {
+
+  pixels.begin();
+  setColor(Color::BLUE,true);
   // set up and configure drivers
   bool setupSuccess = cutter.setupDriver() && pusher.setupDriver();
 
@@ -141,6 +145,7 @@ void StateMachine::handleInitializing() {
     // Successfully homed both motors
     Serial.println("going to IDLE");
     setState(States::IDLE);
+    setColor(Color::GREEN,true);
   } else {
     // Homing failed, handle error state
     Serial.println("going to ERROR");
@@ -160,6 +165,7 @@ void StateMachine::handleIdle() {
   Serial.println("going to POSITIONING_X");
   delay(500);
   setState(States::POSITIONING_X);
+  setColor(Color::RED,true);
   // If the condition is not met, remain in the IDLE state
 }
 
@@ -232,10 +238,49 @@ void StateMachine::handleFlattening() {
   } else {
     // Transition to the error state
     setState(States::ERROR);
+    setColor(Color::GREEN,true);
   }
 }
 
 void StateMachine::handleError() {
-  // Handle the ERROR state
-  // ...
+  setColor(Color::RED,true);
+  delay(500);
 }
+
+void StateMachine::setColor(Color color, bool cool) {
+  uint8_t r = 0;
+  uint8_t g = 0;
+  uint8_t b = 0;
+  switch (color) {
+    case Color::RED:
+      r = 255;
+      g = 0;
+      b = 0;
+      break;
+    case Color::GREEN:
+      r = 0;
+      g = 255;
+      b = 0;
+      break;
+    case Color::BLUE:
+      r = 0;
+      g = 255;
+      b = 255;
+      break;
+    // Add more cases for other colors as needed
+  }
+
+  pixels.clear();
+  if (cool){
+    for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
+      pixels.setPixelColor(i, pixels.Color(r, g, b));
+      pixels.show();   // Send the updated pixel colors to the hardware.
+      delay(50); // Pause before next pass through loop
+    }
+  }
+  else{
+    pixels.fill(pixels.Color(r, g, b));
+  }
+
+}
+
