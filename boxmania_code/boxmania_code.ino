@@ -58,13 +58,10 @@ DcMotorConfig wheelMotor = {
   .maxSpeed = 100      
 };
 
-LedsPins leds = {
-  .red = 13,
-  .green = LED_BUILTIN 
-};
+int LedPin = LED_BUILTIN;
 
 SensorsPins sensors = {
-  .IR = A2,
+  .IR = 12,
   .LS = A1 
 };
 
@@ -74,7 +71,7 @@ StateMachine stateMachine {
   .cutterConfig = cutterMotor,
   .pusherConfig = pusherMotor,
   .wheelConfig = wheelMotor,
-  .leds = leds,
+  .LedPin = LedPin,
   .sensors = sensors
 };
 

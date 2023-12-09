@@ -4,11 +4,11 @@
 #include <sam.h>
 
 StateMachine::StateMachine(
-  StepperConfig& cutterConfig,
-  StepperConfig& pusherConfig,
-  DcMotorConfig& wheelConfig,
-  LedsPins leds,
-  SensorsPins sensors
+    StepperConfig& cutterConfig,
+    StepperConfig& pusherConfig,
+    DcMotorConfig& wheelConfig,
+    int LedPin,
+    SensorsPins sensors
   ): 
   triggerPin(sensors.IR),
   lidPin(sensors.LS),
@@ -17,11 +17,7 @@ StateMachine::StateMachine(
   cutter(cutterConfig),
   wheel(wheelConfig),
   currentState(States::DISABLE),
-  redLed(leds.red),
-  greenLed(leds.green),
-  pixels(NUMPIXELS,leds.red, NEO_GRB + NEO_KHZ800) {
-  //pinMode(redLed, OUTPUT);
-  //pinMode(greenLed, OUTPUT);
+  pixels(NUMPIXELS,LedPin, NEO_GRB + NEO_KHZ800) {
 }
 
 void StateMachine::update() {
@@ -145,6 +141,7 @@ void StateMachine::handleInitializing() {
     // Successfully homed both motors
     Serial.println("going to IDLE");
     setState(States::IDLE);
+    startTime = 0;
     setColor(Color::GREEN,true);
   } else {
     // Homing failed, handle error state
@@ -156,16 +153,27 @@ void StateMachine::handleInitializing() {
 void StateMachine::handleIdle() {
   // Check the digital input
 
-  /*
-  if (analogRead(triggerPin) > 1000) {
-    setState(States::POSITIONING_X);
+  
+  if (!digitalRead(triggerPin) && !digitalRead(lidPin)) {
+    // If the condition is true, start the timer
+    if (startTime == 0) {
+      startTime = millis();
+    } 
+    else {
+      // Check if the duration has passed
+      if (millis() - startTime >= 1000) {
+        // Change the state after 1 second
+        setState(States::POSITIONING_X);
+        startTime = 0;  // Reset the timer
+        setColor(Color::RED,true);
+      }
+    }
+  } 
+  else {
+    // Reset the timer if the condition is not true
+    startTime = 0;
   }
-  */
-  delay(3000);
-  Serial.println("going to POSITIONING_X");
-  delay(500);
-  setState(States::POSITIONING_X);
-  setColor(Color::RED,true);
+  
   // If the condition is not met, remain in the IDLE state
 }
 

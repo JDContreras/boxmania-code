@@ -48,7 +48,7 @@ class StateMachine {
       StepperConfig& cutterConfig,
       StepperConfig& pusherConfig,
       DcMotorConfig& wheelConfig,
-      LedsPins leds,
+      int LedPin,
       SensorsPins sensors
     );  // Constructor
 
@@ -79,12 +79,11 @@ class StateMachine {
     StepperMotor pusher;
     int wheelSpeed;
     DCMotor wheel; 
-    int redLed;
-    int greenLed;
     int triggerPin;
     int lidPin;
     bool doHoming;
     Adafruit_NeoPixel pixels;
+    unsigned long startTime = 0;  
 };
 
 #endif
