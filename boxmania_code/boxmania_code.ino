@@ -35,19 +35,19 @@ StepperConfig pusherMotor = {
     .stallPin = 9,
     .enPin = 10,
     .current = 60,
-    .stallThreshold = 30,
+    .stallThreshold = 35,
     .stepPerMilimeter = 40,
     .microsteps = 8,
     .holdCurrent = 40,
     .limits = {    //mm              
-        .maxPosition = 325.0,
+        .maxPosition = 340.0,
         .minPosition = 0.0,
-        .maxVelocity = 100.0,
+        .maxVelocity = 80.0,
         .minVelocity = 10.0
     },
     .homing = {                 // Initialize the nested struct
         .direction = false,       // true for positive direction, false for negative
-        .velocity = 20.0
+        .velocity = 15.0
     },
     .serialPort = Serial1,
     .address = 3

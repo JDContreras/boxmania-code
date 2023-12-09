@@ -236,6 +236,7 @@ MoveResult StepperMotor::moveRelative(float distance) {
 }
 
 void StepperMotor::moveAbs(float targetPosition) {
+  driver.setStallGuardThreshold(stallThreshold-10);
   // Calculate the relative distance to move from the current position to the target position
   targetPosition = constrain(targetPosition, limits.minPosition, limits.maxPosition);
 
@@ -291,7 +292,7 @@ void StepperMotor::pulse(int stepInterval) {
 }
 
 FunctionResponse StepperMotor::home(bool execute) {
-
+  driver.setStallGuardThreshold(stallThreshold);
   unsigned long currentMicros;
   FunctionResponse tResponse;
 
