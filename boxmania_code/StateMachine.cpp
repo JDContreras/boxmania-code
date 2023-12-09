@@ -64,6 +64,8 @@ void StateMachine::handleDisable() {
 
   pixels.begin();
   setColor(Color::BLUE,true);
+  pinMode(lidPin, INPUT_PULLUP);
+  pinMode(triggerPin, INPUT);
   // set up and configure drivers
   bool setupSuccess = cutter.setupDriver() && pusher.setupDriver();
 
@@ -90,7 +92,7 @@ void StateMachine::handleInitializing() {
   pusher.enable();
 
   // Rotate the wheel in reverse for 200ms at 60% spped
-  wheel.moveTime(-60, 200); 
+  wheel.moveTime(-60, 100); 
 
   // Home the drivers
   FunctionResponse homeRespCutter;
@@ -151,9 +153,7 @@ void StateMachine::handleInitializing() {
 }
 
 void StateMachine::handleIdle() {
-  // Check the digital input
 
-  
   if (!digitalRead(triggerPin) && !digitalRead(lidPin)) {
     // If the condition is true, start the timer
     if (startTime == 0) {
@@ -173,8 +173,7 @@ void StateMachine::handleIdle() {
     // Reset the timer if the condition is not true
     startTime = 0;
   }
-  
-  // If the condition is not met, remain in the IDLE state
+
 }
 
 void StateMachine::handlePositioningX() {
@@ -194,8 +193,13 @@ void StateMachine::handlePositioningX() {
 void StateMachine::handlePositioningY() {
   // Handle the POSITIONING_Y state
   // wheel sequence
-  wheel.moveTime(50, 400); 
-  wheel.moveTime(-100, 200);
+  /*
+  wheel.moveTime(40, 100); 
+  wheel.moveTime(65, 4000); 
+  delay(200);
+  wheel.moveTime(-100, 800);
+  delay(200);
+  */
   setState(States::CUTTING);
 }
 
@@ -206,12 +210,12 @@ void StateMachine::handleHolding() {
 
 void StateMachine::handleCutting() {
   // Move cutter to position 310.0mm
-  MoveResult moveResult = cutter.moveAbs(310.0);
+  MoveResult moveResult = cutter.moveAbs(375.0);
 
   // Check if the operation is successful
   if (moveResult.complete) {
     // Move cutter back to position 0.0mm
-    cutter.moveAbs(0.0);
+    //cutter.moveAbs(0.0);
 
     // Transition to the next state
     setState(States::OPENING_FLAPS);
@@ -227,19 +231,26 @@ void StateMachine::handleReleasing() {
 
 void StateMachine::handleOpeningFlaps() {
   // Handle the OPENING_FLAPS state
-  wheel.moveTime(100, 300); 
-  wheel.moveTime(-100, 300);
+  wheel.moveTime(50, 100);
+  wheel.moveTime(60, 100);
+  wheel.moveTime(70, 100);
+  wheel.moveTime(80, 100);
+  wheel.moveTime(90, 100);
+  wheel.moveTime(100, 5000);
+  delay(200); 
+  wheel.moveTime(-100, 800);
   setState(States::FLATTENING);
 }
 
 void StateMachine::handleFlattening() {
   // Move pusher to position 310.0mm
-  MoveResult moveResult = pusher.moveAbs(310.0);
+  MoveResult moveResult = pusher.moveAbs(340.0);
 
   // Check if the operation is successful
   if (pusher.isSetup() && moveResult.complete && !pusher.stallStatus()) {
     // Move pusher back to position 0.0mm
-    pusher.moveAbs(0.0);
+    pusher.moveAbs(5.0);
+    cutter.moveAbs(1.0);
 
     // Transition to the next state
     setState(States::INITIALIZING);
@@ -283,7 +294,7 @@ void StateMachine::setColor(Color color, bool cool) {
     for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
       pixels.setPixelColor(i, pixels.Color(r, g, b));
       pixels.show();   // Send the updated pixel colors to the hardware.
-      delay(50); // Pause before next pass through loop
+      delay(10); // Pause before next pass through loop
     }
   }
   else{
