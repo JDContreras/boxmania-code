@@ -236,9 +236,9 @@ void StateMachine::handleOpeningFlaps() {
   wheel.moveTime(70, 100);
   wheel.moveTime(80, 100);
   wheel.moveTime(90, 100);
-  wheel.moveTime(100, 5000);
+  wheel.moveTime(100, 3000);
   delay(200); 
-  wheel.moveTime(-100, 800);
+  wheel.moveTime(-100, 500);
   setState(States::FLATTENING);
 }
 
@@ -249,20 +249,25 @@ void StateMachine::handleFlattening() {
   // Check if the operation is successful
   if (pusher.isSetup() && moveResult.complete && !pusher.stallStatus()) {
     // Move pusher back to position 0.0mm
-    pusher.moveAbs(5.0);
+    Serial.println("good");
+    pusher.moveAbs(50.0);
+
     cutter.moveAbs(1.0);
 
     // Transition to the next state
-    setState(States::INITIALIZING);
+    setState(States::IDLE);
+    setColor(Color::GREEN,true);
   } else {
     // Transition to the error state
+    Serial.println("fail");
     setState(States::ERROR);
-    setColor(Color::GREEN,true);
   }
 }
 
 void StateMachine::handleError() {
-  setColor(Color::RED,true);
+  setColor(Color::RED,false);
+  delay(500);
+  setColor(Color::BLUE,false);
   delay(500);
 }
 

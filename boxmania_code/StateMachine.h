@@ -1,7 +1,7 @@
 // StateMachine.h
 #ifndef STATEMACHINE_H
 #define STATEMACHINE_H
-#define NUMPIXELS 100
+#define NUMPIXELS 51
 
 #include "StepperMotor.h"
 #include "DCMotor.h"

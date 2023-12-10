@@ -236,7 +236,7 @@ MoveResult StepperMotor::moveRelative(float distance) {
 }
 
 MoveResult StepperMotor::moveAbs(float targetPosition) {
-  driver.setStallGuardThreshold(stallThreshold-10);
+  driver.setStallGuardThreshold(stallThreshold-12); //reduce the stall detection threshold during motion to avoid false-positives.
   // Calculate the relative distance to move from the current position to the target position
   targetPosition = constrain(targetPosition, limits.minPosition, limits.maxPosition);
 
