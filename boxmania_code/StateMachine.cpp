@@ -192,14 +192,7 @@ void StateMachine::handlePositioningX() {
 
 void StateMachine::handlePositioningY() {
   // Handle the POSITIONING_Y state
-  // wheel sequence
-  /*
-  wheel.moveTime(40, 100); 
-  wheel.moveTime(65, 4000); 
-  delay(200);
-  wheel.moveTime(-100, 800);
-  delay(200);
-  */
+  // wheel sequence if pushing is required
   setState(States::CUTTING);
 }
 
@@ -214,9 +207,6 @@ void StateMachine::handleCutting() {
 
   // Check if the operation is successful
   if (moveResult.complete) {
-    // Move cutter back to position 0.0mm
-    //cutter.moveAbs(0.0);
-
     // Transition to the next state
     setState(States::OPENING_FLAPS);
   } else {
@@ -249,9 +239,7 @@ void StateMachine::handleFlattening() {
   // Check if the operation is successful
   if (pusher.isSetup() && moveResult.complete && !pusher.stallStatus()) {
     // Move pusher back to position 0.0mm
-    Serial.println("good");
     pusher.moveAbs(50.0);
-
     cutter.moveAbs(1.0);
 
     // Transition to the next state

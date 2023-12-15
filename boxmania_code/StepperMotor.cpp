@@ -187,13 +187,6 @@ MoveResult StepperMotor::moveRelative(float distance) {
   // Step generation loop
   int count = 0;
 
-  Serial.print("total steps   ");
-  Serial.println(totalSteps);
-  Serial.print("accel steps   ");
-  Serial.println(accelerationSteps);
-  Serial.print("diaccel steps   ");
-  Serial.println(accelerationSteps + constantSpeedSteps);
-
   float timeFraction = (totalTime/totalSteps);
   for (unsigned long step = 0; step < totalSteps; step++) {
     if (stallStatus()) {
