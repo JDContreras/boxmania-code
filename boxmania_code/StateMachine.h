@@ -1,13 +1,30 @@
 // StateMachine.h
 #ifndef STATEMACHINE_H
 #define STATEMACHINE_H
+#define NUMPIXELS 51
 
 #include "StepperMotor.h"
 #include "DCMotor.h"
 #define DEBUG
-struct Leds {
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+ #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+#endif
+
+struct LedsPins {
   int red;
   int green;
+};
+
+struct SensorsPins {
+  int IR;
+  int LS;
+};
+
+enum class Color {
+  RED,
+  GREEN,
+  BLUE,
 };
 
 enum class States {
@@ -31,7 +48,8 @@ class StateMachine {
       StepperConfig& cutterConfig,
       StepperConfig& pusherConfig,
       DcMotorConfig& wheelConfig,
-      Leds& leds
+      int LedPin,
+      SensorsPins sensors
     );  // Constructor
 
     void update();   // Main update function
@@ -53,13 +71,19 @@ class StateMachine {
     void handleOpeningFlaps();
     void handleFlattening();
     void handleError();
+    void setColor(
+      Color color,
+      bool cool
+    );
     StepperMotor cutter;
     StepperMotor pusher;
     int wheelSpeed;
     DCMotor wheel; 
-    int redLed;
-    int greenLed;
+    int triggerPin;
+    int lidPin;
     bool doHoming;
+    Adafruit_NeoPixel pixels;
+    unsigned long startTime = 0;  
 };
 
 #endif

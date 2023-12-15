@@ -4,7 +4,7 @@ StepperMotor::StepperMotor(const StepperConfig& config)
   : stepPin(config.stepPin), 
     dirPin(config.dirPin), 
     enablePin(config.enPin),
-    speed(40),
+    speed(config.limits.maxVelocity),
     holdCurrent(config.holdCurrent),
     microsteps(config.microsteps),
     initialSpeed(config.limits.minVelocity), 
@@ -187,13 +187,6 @@ MoveResult StepperMotor::moveRelative(float distance) {
   // Step generation loop
   int count = 0;
 
-  Serial.print("total steps   ");
-  Serial.println(totalSteps);
-  Serial.print("accel steps   ");
-  Serial.println(accelerationSteps);
-  Serial.print("diaccel steps   ");
-  Serial.println(accelerationSteps + constantSpeedSteps);
-
   float timeFraction = (totalTime/totalSteps);
   for (unsigned long step = 0; step < totalSteps; step++) {
     if (stallStatus()) {
@@ -233,10 +226,10 @@ MoveResult StepperMotor::moveRelative(float distance) {
   currentPosition = currentPosition + result.distance;
   
   return result;
-  
 }
 
-void StepperMotor::moveAbs(float targetPosition) {
+MoveResult StepperMotor::moveAbs(float targetPosition) {
+  driver.setStallGuardThreshold(stallThreshold-12); //reduce the stall detection threshold during motion to avoid false-positives.
   // Calculate the relative distance to move from the current position to the target position
   targetPosition = constrain(targetPosition, limits.minPosition, limits.maxPosition);
 
@@ -245,10 +238,8 @@ void StepperMotor::moveAbs(float targetPosition) {
   Serial.print(relativeDistance);
   Serial.println("mm");
   // Call moveRelative to execute the motion
-  moveRelative(relativeDistance);
-
-  // Update the current position if the motion is successful
-  //currentPosition = targetPosition;
+  MoveResult result = moveRelative(relativeDistance);
+  return result;
 }
 
 uint32_t StepperMotor::mmToPulses(float distance) {
@@ -292,7 +283,7 @@ void StepperMotor::pulse(int stepInterval) {
 }
 
 FunctionResponse StepperMotor::home(bool execute) {
-
+  driver.setStallGuardThreshold(stallThreshold);
   unsigned long currentMicros;
   FunctionResponse tResponse;
 
@@ -351,7 +342,7 @@ FunctionResponse StepperMotor::home(bool execute) {
       }
 
       if (!execute) {
-        homingState = 10;
+        homingState = 0;
       }
 
 

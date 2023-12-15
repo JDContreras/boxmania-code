@@ -4,21 +4,20 @@
 #include <sam.h>
 
 StateMachine::StateMachine(
-  StepperConfig& cutterConfig,
-  StepperConfig& pusherConfig,
-  DcMotorConfig& wheelConfig,
-  Leds& leds
+    StepperConfig& cutterConfig,
+    StepperConfig& pusherConfig,
+    DcMotorConfig& wheelConfig,
+    int LedPin,
+    SensorsPins sensors
   ): 
-
+  triggerPin(sensors.IR),
+  lidPin(sensors.LS),
   wheelSpeed(100), 
   pusher(pusherConfig),
   cutter(cutterConfig),
   wheel(wheelConfig),
   currentState(States::DISABLE),
-  redLed(leds.red),
-  greenLed(leds.green) {
-  //pinMode(redLed, OUTPUT);
-  //pinMode(greenLed, OUTPUT);
+  pixels(NUMPIXELS,LedPin, NEO_GRB + NEO_KHZ800) {
 }
 
 void StateMachine::update() {
@@ -62,288 +61,139 @@ void StateMachine::setState(States newState) {
 
 
 void StateMachine::handleDisable() {
-  //set up driver
-  //configure drivers
-  //disable all actuators
-  //red led flashing 
-  setState(States::INITIALIZING);
+
+  pixels.begin();
+  setColor(Color::BLUE,true);
+  pinMode(lidPin, INPUT_PULLUP);
+  pinMode(triggerPin, INPUT);
+  // set up and configure drivers
+  bool setupSuccess = cutter.setupDriver() && pusher.setupDriver();
+
+  if (setupSuccess) {
+    Serial.println("Driver setup successful.");
+    //configure stepper drivers
+    cutter.configDriver();
+    pusher.configDriver();
+    // disable all actuators (if needed)
+    cutter.disable();
+    pusher.disable();
+    wheel.stop(); 
+
+    setState(States::INITIALIZING);
+  } else {
+    Serial.println("Driver setup failed. Retrying...");
+    //red led flashing
+  }
 }
 
 void StateMachine::handleInitializing() {
-  // Handle the INITIALIZING state
-  if (Serial.available() > 0) {
-    String input = Serial.readStringUntil('\n');  // Read the incoming command
-    input.trim();  // Remove leading/trailing whitespace
-    bool complete = false;
-    FunctionResponse homeResp;
-    int distance;
-    int speed;
-    int count = 0;
-    int threshold;
-    switch (input[0]) {
-      case 'X':
-        if (cutter.setupDriver()){
-          Serial.println("set up successful ");
-        }
-        else{
-          Serial.println("set up fail");
-        }
-      break;
+  // Enable stepper drivers
+  cutter.enable();
+  pusher.enable();
 
-      case 'x':
-        if (pusher.setupDriver()){
-          Serial.println("set up successful ");
-        }
-        else{
-          Serial.println("set up fail");
-        }
-      break;
+  // Rotate the wheel in reverse for 200ms at 60% spped
+  wheel.moveTime(-60, 100); 
 
-      case 'J':
-        cutter.checkDriver();
-      break;
+  // Home the drivers
+  FunctionResponse homeRespCutter;
+  FunctionResponse homeRespPusher;
+  bool doHomingPusher = false;
+  bool doHomingCutter = false;
+  bool homingPusherComplete  = false;      
+  bool homingCutterComplete  = false;   
+  Serial.println("homing");
+  while (!(homingPusherComplete && homingCutterComplete)){
+    homeRespCutter = cutter.home(doHomingCutter);
+    homeRespPusher = pusher.home(doHomingPusher);
+    
+    if (homeRespCutter.busy || homingCutterComplete){
+      doHomingCutter = false;
+    }
+    else{
+      doHomingCutter = true;
+    }
 
-      case 'j':
-        pusher.checkDriver();
-      break;
+    if (homeRespCutter.done && !homingCutterComplete){
+      homingCutterComplete = true;
+      Serial.println("Homing cutter done");
+    }
+    else if (homeRespCutter.error){
+      Serial.println("Homing cutter fail");
+      homingCutterComplete = true;
+    }
 
-      case 'E':
-        Serial.println("Enabling cutter");
-        cutter.enable();
-      break;
+    if (homeRespPusher.busy || homingPusherComplete){
+      doHomingPusher = false;
+    }
+    else{
+      doHomingPusher = true;
+    }
 
-      case 'e':
-        Serial.println("Enabling pusher");
-        pusher.enable();
-      break;
-
-      case 'A':
-        cutter.printConfig();
-      break;
-
-      case 'a':
-        pusher.printConfig();
-      break;
-
-      case 'C':
-        cutter.configDriver();
-      break;
-
-      case 'c':
-        pusher.configDriver();
-      break;
-
-      case 'D':
-        Serial.println("Disabling cutter");
-        cutter.disable();
-      break;
-
-      case 'd':
-        Serial.println("Disabling pusher");
-        pusher.disable();
-      break;
-
-      case 'H':
-        // Homing operation
-        Serial.println("Cutter homing operation started");  
-        doHoming = false;
-        
-        while (!complete){
-          homeResp = cutter.home(doHoming);
-          
-          if (homeResp.busy){
-            doHoming = false;
-          }
-          else{
-            doHoming = true;
-          }
-          if (homeResp.done){
-            complete = true;
-          }
-          else if (homeResp.error){
-              Serial.println("Homing fail");
-            complete = true;
-          }
-        }
-        complete = false;
-        break;
-      
-      case 'h':
-        // Homing operation
-        Serial.println("Pusher homing operation started");  
-        doHoming = false;
-        
-        while (!complete){
-          homeResp = pusher.home(doHoming);
-          
-          if (homeResp.busy){
-            doHoming = false;
-          }
-          else{
-            doHoming = true;
-          }
-          if (homeResp.done){
-            complete = true;
-          }
-          else if (homeResp.error){
-              Serial.println("Homing fail");
-            complete = true;
-          }
-        }
-        break;
-
-      case 'M':
-        distance = input.substring(2).toInt();
-        if (distance >= -300 && distance <= 300) {
-          // Move to the specified distance
-          Serial.print("Moving to position ");
-          Serial.print(distance);
-          Serial.println("mm");
-          cutter.moveRelative(distance);
-        } 
-        else {
-          Serial.println("Invalid distance. Please use a value between 0 and 100.");
-        }
-        break;
-
-      case 'm':
-        distance = input.substring(2).toInt();
-        if (distance >= -300 && distance <= 300) {
-          // Move to the specified distance
-          Serial.print("Moving to position ");
-          Serial.print(distance);
-          Serial.println("mm");
-          pusher.moveRelative(distance);
-        } 
-        else {
-          Serial.println("Invalid distance. Please use a value between 0 and 100.");
-        }
-        break;
-
-
-      case 'W':   //go to wheel control
-        setState(States::POSITIONING_X);
-        Serial.println("Going to Pos X State");
-
-        break;
-
-      case 'N':     //go to cutter control
-      Serial.println("Going to IDLE State");
-        setState(States::IDLE);
-        Serial.println("Going to IDLE State");
-        break;
-
-
-      default:
-        Serial.println("Unknown command. Valid commands: 'H' for homing, 'M X' for moving to position X mm, 'F' to change to IDLE");
+    if (homeRespPusher.done && !homingPusherComplete){
+      homingPusherComplete = true;
+      Serial.println("Homing pusher done");
+    }
+    else if (homeRespPusher.error){
+      Serial.println("Homing pusher fail");
+      homingPusherComplete = true;
     }
   }
-  
+
+  if (cutter.isHomed() && pusher.isHomed()) {
+    // Successfully homed both motors
+    Serial.println("going to IDLE");
+    setState(States::IDLE);
+    startTime = 0;
+    setColor(Color::GREEN,true);
+  } else {
+    // Homing failed, handle error state
+    Serial.println("going to ERROR");
+    setState(States::ERROR);
+  }
 }
 
 void StateMachine::handleIdle() {
-  // Handle the IDLE state
-  // waiting for the box
-  //int time; 
-  if (Serial.available() > 0) {
-    String input = Serial.readStringUntil('\n');  // Read the incoming command
-    input.trim();  // Remove leading/trailing whitespace
-    switch (input[0]) {
-      case 'F':
-        Serial.println("Moving forward");
-        cutter.moveAbs(310);
-      break;
 
-      case 'R':
-        cutter.moveAbs(0);
-        Serial.println("Moving reverse");
-      break;
-
-      case 'f':
-        Serial.println("Moving forward");
-        pusher.moveAbs(297);
-      break;
-
-      case 'r':
-        Serial.println("Moving reverse");
-        pusher.moveAbs(0);
-      break;
-
-      case 'N':  //go to initial state
-        setState(States::INITIALIZING);
-        Serial.println("Going to Initializing State");
-      break;
-
-      default:
-        Serial.println("Unknown command");
-
+  if (!digitalRead(triggerPin) && !digitalRead(lidPin)) {
+    // If the condition is true, start the timer
+    if (startTime == 0) {
+      startTime = millis();
+    } 
+    else {
+      // Check if the duration has passed
+      if (millis() - startTime >= 1000) {
+        // Change the state after 1 second
+        setState(States::POSITIONING_X);
+        startTime = 0;  // Reset the timer
+        setColor(Color::RED,true);
+      }
     }
+  } 
+  else {
+    // Reset the timer if the condition is not true
+    startTime = 0;
   }
+
 }
 
 void StateMachine::handlePositioningX() {
-  // Handle the POSITIONING_X state
-  if (Serial.available() > 0) {
-    unsigned long time;
-    int tempSpeed;
-    String input = Serial.readStringUntil('\n');  // Read the incoming command
-    input.trim();  // Remove leading/trailing whitespace
-    switch (input[0]) {
-      case 'F':
-        time = input.substring(2).toInt();
-        if (time > 0 && time <= 5000) {
-          // Move to the specified distance
-          Serial.print("Moving wheel ");
-          Serial.print(time);
-          Serial.println(" ms");
-          wheel.moveTime(wheelSpeed, time);
-        } 
-        else {
-          Serial.println("Invalid time. Please use a value between 0 and 5000.");
-        }
-      break;
+  // Move pusher to position 10mm
+  MoveResult moveResult = pusher.moveAbs(65.0);
 
-      case 'R':
-          time = input.substring(2).toInt();
-          if (time > 30 && time <= 5000) {
-          // Move to the specified distance
-          Serial.print("Moving wheel ");
-          Serial.print(time);
-          Serial.println(" ms");
-          wheel.moveTime(-wheelSpeed, time);
-        }  
-        else {
-          Serial.println("Invalid time. Please use a value between 30 and 5000.");
-        }
-      break;
-
-      case 's':
-          tempSpeed = input.substring(2).toInt();
-          if (tempSpeed >= 20 && tempSpeed <= 100) {
-          // Move to the specified distance
-          Serial.println("Updating speed");
-          wheelSpeed = tempSpeed;
-          Serial.println("Done");
-        }  
-        else {
-          Serial.println("Invalid spped. Please use a value between 20 and 100.");
-        }
-      break;
-
-      case 'N':  //go to initial state
-        setState(States::INITIALIZING);
-        Serial.println("Going to Initializing State");
-      break;
-
-      default:
-        Serial.println("Unknown command");
-    }
+  // Check if the operation is complete and successful
+  if (moveResult.complete) {
+    // Transition to the next state
+    setState(States::POSITIONING_Y);
+  } else {
+    // Transition to the error state
+    setState(States::ERROR);
   }
 }
 
 void StateMachine::handlePositioningY() {
   // Handle the POSITIONING_Y state
-  // ...
+  // wheel sequence if pushing is required
+  setState(States::CUTTING);
 }
 
 void StateMachine::handleHolding() {
@@ -352,10 +202,18 @@ void StateMachine::handleHolding() {
 }
 
 void StateMachine::handleCutting() {
-  // Handle the CUTTING state
-  // ...
-}
+  // Move cutter to position 310.0mm
+  MoveResult moveResult = cutter.moveAbs(375.0);
 
+  // Check if the operation is successful
+  if (moveResult.complete) {
+    // Transition to the next state
+    setState(States::OPENING_FLAPS);
+  } else {
+    // Transition to the error state
+    setState(States::ERROR);
+  }
+}
 void StateMachine::handleReleasing() {
   // Handle the RELEASING state
   // ...
@@ -363,15 +221,78 @@ void StateMachine::handleReleasing() {
 
 void StateMachine::handleOpeningFlaps() {
   // Handle the OPENING_FLAPS state
-  // ...
+  wheel.moveTime(50, 100);
+  wheel.moveTime(60, 100);
+  wheel.moveTime(70, 100);
+  wheel.moveTime(80, 100);
+  wheel.moveTime(90, 100);
+  wheel.moveTime(100, 3000);
+  delay(200); 
+  wheel.moveTime(-100, 500);
+  setState(States::FLATTENING);
 }
 
 void StateMachine::handleFlattening() {
-  // Handle the FLATTENING state
-  // ...
+  // Move pusher to position 310.0mm
+  MoveResult moveResult = pusher.moveAbs(340.0);
+
+  // Check if the operation is successful
+  if (pusher.isSetup() && moveResult.complete && !pusher.stallStatus()) {
+    // Move pusher back to position 0.0mm
+    pusher.moveAbs(50.0);
+    cutter.moveAbs(1.0);
+
+    // Transition to the next state
+    setState(States::IDLE);
+    setColor(Color::GREEN,true);
+  } else {
+    // Transition to the error state
+    Serial.println("fail");
+    setState(States::ERROR);
+  }
 }
 
 void StateMachine::handleError() {
-  // Handle the ERROR state
-  // ...
+  setColor(Color::RED,false);
+  delay(500);
+  setColor(Color::BLUE,false);
+  delay(500);
 }
+
+void StateMachine::setColor(Color color, bool cool) {
+  uint8_t r = 0;
+  uint8_t g = 0;
+  uint8_t b = 0;
+  switch (color) {
+    case Color::RED:
+      r = 255;
+      g = 0;
+      b = 0;
+      break;
+    case Color::GREEN:
+      r = 0;
+      g = 255;
+      b = 0;
+      break;
+    case Color::BLUE:
+      r = 0;
+      g = 255;
+      b = 255;
+      break;
+    // Add more cases for other colors as needed
+  }
+
+  pixels.clear();
+  if (cool){
+    for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
+      pixels.setPixelColor(i, pixels.Color(r, g, b));
+      pixels.show();   // Send the updated pixel colors to the hardware.
+      delay(10); // Pause before next pass through loop
+    }
+  }
+  else{
+    pixels.fill(pixels.Color(r, g, b));
+  }
+
+}
+
